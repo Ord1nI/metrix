@@ -73,7 +73,7 @@ func updateCounter(res http.ResponseWriter, req *http.Request) {
 func main() {
     mux := http.NewServeMux()
     mux.HandleFunc(`/`, func(w http.ResponseWriter, r *http.Request) {
-    w.WriteHeader(http.StatusBadRequest)})
+    w.WriteHeader(http.StatusNotFound)})
     mux.HandleFunc(`/update/gauge/`, updateGauge)
     mux.HandleFunc(`/update/counter/`, updateCounter)
 
