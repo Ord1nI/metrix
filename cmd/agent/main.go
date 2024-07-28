@@ -61,7 +61,7 @@ func SendGaugeMetrics() error{
             return err
         }
         if res.StatusCode != http.StatusOK {
-            return errors.New("Doesnt sent")
+            return errors.New("doesnt sent")
         }
         res.Body.Close()
     }
