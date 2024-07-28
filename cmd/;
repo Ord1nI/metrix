@@ -8,7 +8,6 @@ import(
     "math/rand"
     "strings"
     "fmt"
-    "errors"
 )
 
 var metrics map[string]float64
@@ -60,9 +59,6 @@ func SendGaugeMetrics() error{
         if err != nil {
             return err
         }
-        if res.StatusCode != http.StatusOK {
-            return errors.New("Doesnt sent")
-        }
         res.Body.Close()
     }
     return nil
@@ -79,14 +75,9 @@ func main() {
         if err != nil {
             fmt.Println(err)
         } else {
-            fmt.Println("Gauge metrics sent")
+            fmt.Println("Metrics sent")
         }
-        res, err := http.Post("http://localhost:8080/update/counter/PollCount/1", "text/plain",nil)
-        if err != nil || res.StatusCode != http.StatusOK{
-            fmt.Println("Counter metrics wasnt't sended")
-        } else {
-            fmt.Println("Counter metrics sented")
-        }
+        http.Post("http://localhost:8080/update/counter/PollCount/1", "text/plain",nil)
         time.Sleep(time.Second *2)
     }    
 }
