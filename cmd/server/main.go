@@ -14,6 +14,8 @@ func main() {
 
     mux := http.NewServeMux()
     mux.HandleFunc(`/`, func(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusNotFound)})
+    mux.HandleFunc(`/update/`, func(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusBadRequest)})
     mux.HandleFunc(`/update/gauge/`, handlers.UpdateGauge(stor))
     mux.HandleFunc(`/update/counter/`, handlers.UpdateCounter(stor))
