@@ -87,6 +87,7 @@ func main() {
         } else {
             fmt.Println("Counter metrics sented")
         }
+        res.Body.Close()
         time.Sleep(time.Second *2)
     }    
 }
