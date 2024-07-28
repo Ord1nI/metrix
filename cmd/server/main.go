@@ -26,11 +26,15 @@ func updateGauge(res http.ResponseWriter, req *http.Request) {
 
     url := strings.Split(req.URL.Path, "/")[3:]
 
-    if len(url) != 2 {
-        http.Error(res, "Bad request", http.StatusBadRequest)
+    if len(url) < 2 {
+        http.Error(res, "Not Found", http.StatusNotFound)
         return
     }
-
+    if len(url) > 2 {
+        http.Error(res, "Bad Request", http.StatusBadRequest)
+        return
+    }
+        
     name := url[0]
     val,err := strconv.ParseFloat(url[1], 64)
 
@@ -52,8 +56,12 @@ func updateCounter(res http.ResponseWriter, req *http.Request) {
 
     url := strings.Split(req.URL.Path, "/")[3:]
 
-    if len(url) != 2 {
-        http.Error(res, "Bad request", http.StatusBadRequest)
+    if len(url) < 2 {
+        http.Error(res, "Not Found", http.StatusNotFound)
+        return
+    }
+    if len(url) > 2 {
+        http.Error(res, "Bad Request", http.StatusBadRequest)
         return
     }
     
@@ -74,6 +82,8 @@ func main() {
     mux := http.NewServeMux()
     mux.HandleFunc(`/`, func(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusNotFound)})
+    mux.HandleFunc(`/update/`, func(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusBadRequest)})
     mux.HandleFunc(`/update/gauge/`, updateGauge)
     mux.HandleFunc(`/update/counter/`, updateCounter)
 
