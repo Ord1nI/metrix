@@ -39,8 +39,16 @@ func TestUpdateGauge(t *testing.T) {
             name: "Test 1",
             reqURL: "http://fuckintsite.com/update/gauge/",
             want: want{
+                code: http.StatusNotFound,
+                response: "Not Found\n",
+            },
+        },
+        {
+            name: "big url",
+            reqURL: "http://fuckintsite.com/update/gauge/name/13/dsjl",
+            want: want{
                 code: http.StatusBadRequest,
-                response: "Bad request\n",
+                response: "Bad Request\n",
             },
         },
         {
@@ -94,8 +102,16 @@ func TestUpdateCounter(t *testing.T) {
             name: "Test 1",
             reqURL: "http://fuckintsite.com/update/counter/",
             want: want{
+                code: http.StatusNotFound,
+                response: "Not Found\n",
+            },
+        },
+        {
+            name: "big url",
+            reqURL: "http://fuckintsite.com/update/counter/name/123/bj",
+            want: want{
                 code: http.StatusBadRequest,
-                response: "Bad request\n",
+                response: "Bad Request\n",
             },
         },
         {

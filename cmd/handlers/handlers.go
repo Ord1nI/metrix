@@ -17,8 +17,12 @@ func UpdateGauge(s storage.Repositories) func(res http.ResponseWriter, req *http
 
         url := strings.Split(req.URL.Path, "/")[3:]
 
-        if len(url) != 2 {
-            http.Error(res, "Bad request", http.StatusBadRequest)
+        if len(url) < 2 {
+            http.Error(res, "Not Found", http.StatusNotFound)
+            return
+        }
+        if len(url) > 2 {
+            http.Error(res, "Bad Request", http.StatusBadRequest)
             return
         }
 
@@ -44,8 +48,12 @@ return func(res http.ResponseWriter, req *http.Request) {
 
         url := strings.Split(req.URL.Path, "/")[3:]
 
-        if len(url) != 2 {
-            http.Error(res, "Bad request", http.StatusBadRequest)
+        if len(url) < 2 {
+            http.Error(res, "Not Found", http.StatusNotFound)
+            return
+        }
+        if len(url) > 2 {
+            http.Error(res, "Bad Request", http.StatusBadRequest)
             return
         }
         
