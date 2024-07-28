@@ -17,13 +17,11 @@ type storageMock struct {
         return 0, nil
     }
     func (storageMock) AddGauge(name string, val float64) {
-        return
     }
     func (storageMock) GetCounter(name string) (int64, error) {
         return 0, nil
     }
     func (storageMock) AddCounter(name string, val int64) {
-        return
     }
 
 
@@ -34,12 +32,12 @@ func TestUpdateGauge(t *testing.T) {
     }
     tests := []struct{
         name string
-        reqUrl string
+        reqURL string
         want want
     }{
         {
             name: "Test 1",
-            reqUrl: "http://fuckintsite.com/update/gauge/",
+            reqURL: "http://fuckintsite.com/update/gauge/",
             want: want{
                 code: http.StatusBadRequest,
                 response: "Bad request\n",
@@ -47,7 +45,7 @@ func TestUpdateGauge(t *testing.T) {
         },
         {
             name: "Test badReq",
-            reqUrl: "http://fuckintsite.com/update/gauge/name/afs",
+            reqURL: "http://fuckintsite.com/update/gauge/name/afs",
             want: want{
                 code: http.StatusBadRequest,
                 response: "Incorect metric value\n",
@@ -55,7 +53,7 @@ func TestUpdateGauge(t *testing.T) {
         },
         {
             name: "All good",
-            reqUrl: "http://fuckintsite.com/update/gauge/name/111.32",
+            reqURL: "http://fuckintsite.com/update/gauge/name/111.32",
             want: want{
                 code: http.StatusOK,
                 response: "",
@@ -64,7 +62,7 @@ func TestUpdateGauge(t *testing.T) {
     }
     for _, test := range tests{
         t.Run(test.name, func(t *testing.T) {
-            req := httptest.NewRequest(http.MethodPost, test.reqUrl, nil)
+            req := httptest.NewRequest(http.MethodPost, test.reqURL, nil)
 
             w := httptest.NewRecorder()
 
@@ -89,12 +87,12 @@ func TestUpdateCounter(t *testing.T) {
     }
     tests := []struct{
         name string
-        reqUrl string
+        reqURL string
         want want
     }{
         {
             name: "Test 1",
-            reqUrl: "http://fuckintsite.com/update/counter/",
+            reqURL: "http://fuckintsite.com/update/counter/",
             want: want{
                 code: http.StatusBadRequest,
                 response: "Bad request\n",
@@ -102,7 +100,7 @@ func TestUpdateCounter(t *testing.T) {
         },
         {
             name: "Test Invorect value",
-            reqUrl: "http://fuckintsite.com/update/counter/name/123.34",
+            reqURL: "http://fuckintsite.com/update/counter/name/123.34",
             want: want{
                 code: http.StatusBadRequest,
                 response: "Incorect metric value\n",
@@ -110,7 +108,7 @@ func TestUpdateCounter(t *testing.T) {
         },
         {
             name: "All good",
-            reqUrl: "http://fuckintsite.com/update/counter/name/111",
+            reqURL: "http://fuckintsite.com/update/counter/name/111",
             want: want{
                 code: http.StatusOK,
                 response: "",
@@ -119,7 +117,7 @@ func TestUpdateCounter(t *testing.T) {
     }
     for _, test := range tests{
         t.Run(test.name, func(t *testing.T) {
-            req := httptest.NewRequest(http.MethodPost, test.reqUrl, nil)
+            req := httptest.NewRequest(http.MethodPost, test.reqURL, nil)
 
             w := httptest.NewRecorder()
 
