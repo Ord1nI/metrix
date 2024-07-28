@@ -19,15 +19,15 @@ var data MemStorage = MemStorage{
 
 func updateGauge(res http.ResponseWriter, req *http.Request) {
 
-    if req.Method != http.MethodGet {
-        http.Error(res, "Only Get requests in allowd", http.StatusMethodNotAllowed)
+    if req.Method != http.MethodPost {
+        http.Error(res, "Only Post requests in allowd", http.StatusMethodNotAllowed)
         return
     }
 
     url := strings.Split(req.URL.Path, "/")[3:]
 
     if len(url) != 2 {
-        http.Error(res, "Incorect", http.StatusBadRequest)
+        http.Error(res, "Bad request", http.StatusBadRequest)
         return
     }
 
@@ -35,7 +35,7 @@ func updateGauge(res http.ResponseWriter, req *http.Request) {
     val,err := strconv.ParseFloat(url[1], 64)
 
     if err != nil {
-        http.Error(res, "Incorect value", http.StatusBadRequest)
+        http.Error(res, "Incorect metric value", http.StatusBadRequest)
         return
     }
 
@@ -45,15 +45,15 @@ func updateGauge(res http.ResponseWriter, req *http.Request) {
 
 func updateCounter(res http.ResponseWriter, req *http.Request) {
 
-    if req.Method != http.MethodGet {
-        http.Error(res, "Only Get requests in allowd", http.StatusMethodNotAllowed)
+    if req.Method != http.MethodPost {
+        http.Error(res, "Only Post requests in allowd", http.StatusMethodNotAllowed)
         return
     }
 
     url := strings.Split(req.URL.Path, "/")[3:]
 
     if len(url) != 2 {
-        http.Error(res, "Incorect", http.StatusBadRequest)
+        http.Error(res, "Bad request", http.StatusBadRequest)
         return
     }
     
@@ -61,7 +61,7 @@ func updateCounter(res http.ResponseWriter, req *http.Request) {
     val, err := strconv.ParseInt(url[1], 10, 64)
 
     if err != nil {
-        http.Error(res, "Incorect value", http.StatusBadRequest)
+        http.Error(res, "Incorect metric value", http.StatusBadRequest)
         return
     }
 
