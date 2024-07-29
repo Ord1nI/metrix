@@ -8,7 +8,7 @@ import (
 )
 
 
-func UpdateGauge(s storage.Repositories) func(res http.ResponseWriter, req *http.Request) {
+func UpdateGauge(s storage.RepositoriesAdder) func(res http.ResponseWriter, req *http.Request) {
     return func(res http.ResponseWriter, req *http.Request) {
         if req.Method != http.MethodPost {
             http.Error(res, "Only POST requests in allowd", http.StatusMethodNotAllowed)
@@ -39,7 +39,7 @@ func UpdateGauge(s storage.Repositories) func(res http.ResponseWriter, req *http
     }
 }
 
-func UpdateCounter(s storage.Repositories) func(res http.ResponseWriter, req *http.Request){
+func UpdateCounter(s storage.RepositoriesAdder) func(res http.ResponseWriter, req *http.Request){
 return func(res http.ResponseWriter, req *http.Request) {
         if req.Method != http.MethodPost {
             http.Error(res, "Only POST requests in allowd", http.StatusMethodNotAllowed)

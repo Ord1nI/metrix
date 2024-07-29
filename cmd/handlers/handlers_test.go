@@ -10,19 +10,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type storageMock struct {
-}
+type storageMock struct{}
 
-    func (storageMock) GetGauge(name string) (float64, error) {
-        return 0, nil
-    }
-    func (storageMock) AddGauge(name string, val float64) {
-    }
-    func (storageMock) GetCounter(name string) (int64, error) {
-        return 0, nil
-    }
-    func (storageMock) AddCounter(name string, val int64) {
-    }
+func (storageMock) GetGauge(name string) (float64, error) {
+    return 0, nil
+}
+func (storageMock) AddGauge(name string, val float64) {
+}
+func (storageMock) GetCounter(name string) (int64, error) {
+    return 0, nil
+}
+func (storageMock) AddCounter(name string, val int64) {
+}
 
 
 func TestUpdateGauge(t *testing.T) {
@@ -37,6 +36,14 @@ func TestUpdateGauge(t *testing.T) {
     }{
         {
             name: "Test 1",
+            reqURL: "http://fuckintsite.com/update/gauge",
+            want: want{
+                code: http.StatusNotFound,
+                response: "Not Found\n",
+            },
+        },
+        {
+            name: "Test 2",
             reqURL: "http://fuckintsite.com/update/gauge/",
             want: want{
                 code: http.StatusNotFound,
@@ -74,7 +81,7 @@ func TestUpdateGauge(t *testing.T) {
 
             w := httptest.NewRecorder()
 
-            UpdateGauge(storageMock{})(w, req)
+            UpdateGauge(&storageMock{})(w, req)
 
             res := w.Result()
             assert.Equal(t,test.want.code, res.StatusCode)
@@ -137,7 +144,7 @@ func TestUpdateCounter(t *testing.T) {
 
             w := httptest.NewRecorder()
 
-            UpdateCounter(storageMock{})(w, req)
+            UpdateCounter(&storageMock{})(w, req)
 
             res := w.Result()
             assert.Equal(t,test.want.code, res.StatusCode)
