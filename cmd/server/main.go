@@ -48,7 +48,7 @@ func main() {
     r.Get("/", handlers.WriteAllMetrics(stor))                  //POST localhost:/
 
     r.Route("/update", func(r chi.Router) {
-        r.HandleFunc("/", handlers.BadRequest)                      // ANY /update/
+        r.HandleFunc("/", handlers.NotFound)                      // ANY /update/
 
         r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
 
@@ -57,12 +57,11 @@ func main() {
     })
 
     r.Route("/value", func(r chi.Router) {
-        r.Get("/", handlers.BadRequest)
+        r.HandleFunc("/", handlers.NotFound)            // Any /value/
 
-        r.Route("/gauge", valueGaugeRoute(stor))         // ANY /update/gauge/*
+        r.Route("/gauge", valueGaugeRoute(stor))        
 
-        r.Route("/counter", valueCounterRoute(stor))     // Any /update/counter/*
-
+        r.Route("/counter", valueCounterRoute(stor))   
     })
 
     err := http.ListenAndServe(`:8080`, r)

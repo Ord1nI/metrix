@@ -54,7 +54,7 @@ func TestMain(t *testing.T) {
     r := chi.NewRouter()
 
     r.Route("/update", func(r chi.Router) {
-        r.HandleFunc("/", handlers.BadRequest)                      // ANY /update/
+        r.HandleFunc("/", handlers.NotFound)                      // ANY /update/
 
         r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
 
@@ -63,7 +63,7 @@ func TestMain(t *testing.T) {
     })
 
     r.Route("/value", func(r chi.Router) {
-        r.Get("/", handlers.BadRequest)
+        r.HandleFunc("/", handlers.NotFound)            // Any /value/
 
         r.Route("/gauge", valueGaugeRoute(stor))         // ANY /update/gauge/*
 
@@ -103,8 +103,8 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
         {
             URL: "/update",
             want: want{
-                code:http.StatusBadRequest,
-                res: "Bad Request\n",
+                code:http.StatusNotFound,
+                res: "Not Found\n",
             },
         },
         {
@@ -193,10 +193,10 @@ func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http
             },
         },
         {
-            URL: "/update/",
+            URL: "/update",
             want: want{
-                code:http.StatusBadRequest,
-                res: "Bad Request\n",
+                code:http.StatusNotFound,
+                res: "Not Found\n",
             },
         },
         {
@@ -280,8 +280,8 @@ func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client 
         {
             URL: "/value/",
             want: want{
-                code:http.StatusBadRequest,
-                res: "Bad Request\n",
+                code:http.StatusNotFound,
+                res: "Not Found\n",
             },
         },
         {
@@ -354,10 +354,10 @@ func tGaugeGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *h
             },
         },
         {
-            URL: "/value/",
+            URL: "/value",
             want: want{
-                code:http.StatusBadRequest,
-                res: "Bad Request\n",
+                code:http.StatusNotFound,
+                res: "Not Found\n",
             },
         },
         {

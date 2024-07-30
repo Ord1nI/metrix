@@ -167,7 +167,7 @@ func TestGetGauge(t *testing.T) {
             },
         },
     }
-    var stor *storageMock = &storageMock{}
+    stor := &storageMock{}
 
     r := chi.NewRouter()
     r.Post("/value/gauge/{name}",GetGauge(stor))
@@ -226,7 +226,7 @@ func TestGetCounter(t *testing.T) {
             },
         },
     }
-    var stor *storageMock = &storageMock{}
+    stor := &storageMock{}
 
     r := chi.NewRouter()
     r.Post("/value/counter/{name}",GetCounter(stor))
