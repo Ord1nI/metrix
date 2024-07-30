@@ -56,10 +56,11 @@ func TestMain(t *testing.T) {
     r.Route("/update", func(r chi.Router) {
         r.HandleFunc("/", handlers.NotFound)                      // ANY /update/
 
+        r.Post("/{name}/*", handlers.NotFound)
+
         r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
 
         r.Route("/counter", updateCounterRoute(stor))     // Any /update/counter/*
-        
     })
 
     r.Route("/value", func(r chi.Router) {

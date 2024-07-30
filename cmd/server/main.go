@@ -50,6 +50,8 @@ func main() {
     r.Route("/update", func(r chi.Router) {
         r.HandleFunc("/", handlers.NotFound)                      // ANY /update/
 
+        r.Post("/{name}/*", handlers.NotFound)          //Post /update/any/*
+
         r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
 
         r.Route("/counter", updateCounterRoute(stor))     // Any /update/counter/*
