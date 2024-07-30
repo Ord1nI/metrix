@@ -54,9 +54,7 @@ func TestMain(t *testing.T) {
     r := chi.NewRouter()
 
     r.Route("/update", func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)                      // ANY /update/
-
-        r.Post("/{name}/*", handlers.NotFound)
+        r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
 
         r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
 
@@ -64,7 +62,7 @@ func TestMain(t *testing.T) {
     })
 
     r.Route("/value", func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)            // Any /value/
+        r.HandleFunc("/*", handlers.BadRequest)            // Any /value/
 
         r.Route("/gauge", valueGaugeRoute(stor))         // ANY /update/gauge/*
 
@@ -104,8 +102,8 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
         {
             URL: "/update",
             want: want{
-                code:http.StatusNotFound,
-                res: "Not Found\n",
+                code: http.StatusBadRequest,
+                res: "Bad Request\n",
             },
         },
         {
@@ -118,8 +116,8 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
         {
             URL: "/update/random/name/123",
             want: want{
-                code:http.StatusNotFound,
-                res: "Not Found\n",
+                code:http.StatusBadRequest,
+                res: "Bad Request\n",
             },
         },
         {
@@ -203,8 +201,15 @@ func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http
         {
             URL: "/update",
             want: want{
-                code:http.StatusNotFound,
-                res: "Not Found\n",
+                code: http.StatusBadRequest, 
+                res: "Bad Request\n",
+            },
+        },
+        {
+            URL: "/update/random/name/123",
+            want: want{
+                code: http.StatusBadRequest,
+                res: "Bad Request\n",
             },
         },
         {
@@ -288,8 +293,15 @@ func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client 
         {
             URL: "/value/",
             want: want{
-                code:http.StatusNotFound,
-                res: "Not Found\n",
+                code: http.StatusBadRequest,
+                res: "Bad Request\n",
+            },
+        },
+        {
+            URL: "/value/random/123",
+            want: want{
+                code: http.StatusBadRequest, 
+                res: "Bad Request\n",
             },
         },
         {
@@ -362,10 +374,17 @@ func tGaugeGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *h
             },
         },
         {
-            URL: "/value",
+            URL: "/value/",
             want: want{
-                code:http.StatusNotFound,
-                res: "Not Found\n",
+                code: http.StatusBadRequest,
+                res: "Bad Request\n",
+            },
+        },
+        {
+            URL: "/value/random/123",
+            want: want{
+                code: http.StatusBadRequest, 
+                res: "Bad Request\n",
             },
         },
         {
