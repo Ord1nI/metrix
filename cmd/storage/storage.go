@@ -2,9 +2,10 @@ package storage
 
 import (
     "fmt"
+    "sort"
 )
 
-type RepositoriesGeter interface{
+type RepositoriesGetter interface{
     GetGauge(name string) (float64, error)
     GetCounter(name string) (int64, error)
 }
@@ -19,19 +20,24 @@ type RepositoriesGetterAdder interface{
     AddGauge(name string, val float64)
 }
 
-type memStorage struct{
+type MemStorage struct{
     gauge map[string]float64
     counter map[string]int64
 }
 
-func NewEmptyStorage() *memStorage{
-    return &memStorage{ 
+type metric struct {
+    Name string
+    Val float64
+}
+
+func NewEmptyStorage() *MemStorage{
+    return &MemStorage{ 
         gauge: make(map[string]float64),
         counter: make(map[string]int64),
     }
 }
 
-func (m *memStorage) GetGauge(name string) (float64, error) {
+func (m *MemStorage) GetGauge(name string) (float64, error) {
     val, ok := m.gauge[name]
     if !ok {
         return 0, fmt.Errorf("no %s in Gauge", name)
@@ -39,7 +45,7 @@ func (m *memStorage) GetGauge(name string) (float64, error) {
     return val, nil
 }
 
-func (m *memStorage) GetCounter(name string) (int64, error) {
+func (m *MemStorage) GetCounter(name string) (int64, error) {
     val, ok := m.counter[name]
     if !ok {
         return 0, fmt.Errorf("no %s in Counter", name)
@@ -47,15 +53,26 @@ func (m *memStorage) GetCounter(name string) (int64, error) {
     return val, nil
 }
 
-func (m *memStorage) AddGauge(name string, val float64){
+func (m *MemStorage) AddGauge(name string, val float64){
     m.gauge[name] = val
 }
 
-func (m *memStorage) AddCounter(name string, val int64){
+func (m *MemStorage) AddCounter(name string, val int64){
     m.counter[name] += val
 }
 
-func (m *memStorage) PrintAll() {
-    fmt.Println(m.counter)
-    fmt.Println(m.gauge)
+func (m *MemStorage) GetAll() []metric{
+    r := make([]metric,0,len(m.gauge) +len(m.counter))
+
+    for i, v := range m.gauge {
+        r = append(r, metric{i,v})
+    }
+
+    for i, v := range m.counter {
+        r = append(r, metric{i,float64(v)})
+    }
+
+    sort.SliceStable(r,func(i, j int) bool { return r[i].Name < r[j].Name})
+
+    return r
 }

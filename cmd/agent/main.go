@@ -1,6 +1,8 @@
 package main
 
 import(
+    "github.com/go-resty/resty/v2"
+
     "runtime"
     "net/http"
     "strconv"
@@ -49,45 +51,56 @@ func collectMetrics() {
 }
 
 
-func SendGaugeMetrics() error{
+func SendGaugeMetrics(client *resty.Client) error{
     for i, v := range metrics {
         var builder strings.Builder
-        builder.WriteString("http://localhost:8080/update/gauge/")
+        builder.WriteString("/update/gauge/")
         builder.WriteString(i)
         builder.WriteRune('/')
         builder.WriteString(strconv.FormatFloat(v, 'f', -1, 64))
-        res, err := http.Post(builder.String(),"text/plain",nil)
+        res, err := client.R().
+            ExpectContentType("text/plain").
+            Post(builder.String())
+        
         if err != nil {
             return err
         }
-        if res.StatusCode != http.StatusOK {
+        if res.StatusCode() != http.StatusOK {
             return errors.New("doesnt sent")
         }
-        res.Body.Close()
     }
     return nil
 }
 
 func main() {
+    client := resty.New().SetBaseURL("http://localhost:8080")
+
     for {
         for i := 0; i < 4; i++ {
             collectMetrics()
             time.Sleep(time.Second * 2)
         }
+
         collectMetrics()
-        err := SendGaugeMetrics()
+
+        err := SendGaugeMetrics(client)
+
         if err != nil {
             fmt.Println(err)
         } else {
             fmt.Println("Gauge metrics sent")
         }
-        res, err := http.Post("http://localhost:8080/update/counter/PollCount/1", "text/plain",nil)
-        if err != nil || res.StatusCode != http.StatusOK{
+
+        res, err := client.R().
+            ExpectContentType("text/plain").
+            Post("/update/counter/PollCount/1")
+
+        if err != nil || res.StatusCode() != http.StatusOK{
             fmt.Println("Counter metrics wasnt't sended")
         } else {
             fmt.Println("Counter metrics sented")
         }
-        res.Body.Close()
+
         time.Sleep(time.Second *2)
     }    
 }
