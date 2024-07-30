@@ -7,11 +7,11 @@ import (
     "strconv"
     "bytes"
     "io"
-    "github.com/Ord1nI/metrix/cmd/storage"
+    "github.com/Ord1nI/metrix/internal/storage"
 )
 
 
-func UpdateGauge(s storage.RepositoriesAdder) func(res http.ResponseWriter, req *http.Request) {
+func UpdateGauge(s storage.Adder) func(res http.ResponseWriter, req *http.Request) {
     return func(res http.ResponseWriter, req *http.Request) {
         
         name := chi.URLParam(req, "name")
@@ -29,7 +29,7 @@ func UpdateGauge(s storage.RepositoriesAdder) func(res http.ResponseWriter, req 
     }
 }
 
-func UpdateCounter(s storage.RepositoriesAdder) func(res http.ResponseWriter, req *http.Request){
+func UpdateCounter(s storage.Adder) func(res http.ResponseWriter, req *http.Request){
     return func(res http.ResponseWriter, req *http.Request) {
 
         name := chi.URLParam(req, "name")
@@ -47,7 +47,7 @@ func UpdateCounter(s storage.RepositoriesAdder) func(res http.ResponseWriter, re
     }
 }
 
-func GetGauge(s storage.RepositoriesGetter) func(res http.ResponseWriter, req *http.Request) {
+func GetGauge(s storage.Getter) func(res http.ResponseWriter, req *http.Request) {
     return func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
         v, err := s.GetGauge(name)
@@ -63,7 +63,7 @@ func GetGauge(s storage.RepositoriesGetter) func(res http.ResponseWriter, req *h
     }
 }
 
-func GetCounter(s storage.RepositoriesGetter) func(res http.ResponseWriter, req *http.Request){
+func GetCounter(s storage.Getter) func(res http.ResponseWriter, req *http.Request){
 
     return func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
@@ -80,7 +80,7 @@ func GetCounter(s storage.RepositoriesGetter) func(res http.ResponseWriter, req 
     }
 
 }
-func WriteAllMetrics(stor *storage.MemStorage) func(res http.ResponseWriter, req *http.Request) {
+func GetAllMetrics(stor *storage.MemStorage) func(res http.ResponseWriter, req *http.Request) {
     return func(res http.ResponseWriter, req *http.Request) {
         var html bytes.Buffer
         html.WriteString(`<html>

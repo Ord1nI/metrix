@@ -5,20 +5,21 @@ import (
     "sort"
 )
 
-type RepositoriesGetter interface{
+type Getter interface{
     GetGauge(name string) (float64, error)
     GetCounter(name string) (int64, error)
 }
 
-type RepositoriesAdder interface{
+type Adder interface{
     AddCounter(name string, val int64)
     AddGauge(name string, val float64)
 }
 
-type RepositoriesGetterAdder interface{
-    AddCounter(name string, val int64)
-    AddGauge(name string, val float64)
+type GetterAdder interface{
+    Adder
+    Getter
 }
+
 
 type MemStorage struct{
     gauge map[string]float64

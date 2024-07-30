@@ -1,71 +1,27 @@
 package main
 
 import (
-    "github.com/go-chi/chi/v5"
-
+    "flag"
     "net/http"
-    "github.com/Ord1nI/metrix/cmd/handlers"
-    "github.com/Ord1nI/metrix/cmd/storage"
+    "github.com/Ord1nI/metrix/internal/storage"
+    "github.com/Ord1nI/metrix/internal/handlers"
 )
 
+var fIpStr = flag.String("a",":8080","enter IP format ip:port")
 
-func updateGaugeRoute(stor storage.RepositoriesAdder) func(r chi.Router){
-    return func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)                    // ANY /update/gauge/
-        r.Post("/{name}/{val}", handlers.UpdateGauge(stor))     // POST /update/gauge/name/123
-        r.HandleFunc("/{name}/{val}/*", handlers.BadRequest)    // ANY /update/gauge/name/123/adsf
-    }
-}
-
-func updateCounterRoute(stor storage.RepositoriesAdder) func(r chi.Router){
-    return func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)                    // ANY /update/gauge/
-        r.Post("/{name}/{val}", handlers.UpdateCounter(stor))     // POST /update/gauge/name/123
-        r.HandleFunc("/{name}/{val}/*", handlers.BadRequest)  // ANY /update/gauge/name/123/adsf
-    }
-}
-func valueGaugeRoute(stor storage.RepositoriesGetter) func(r chi.Router){
-    return func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)                //ANY /value/gauge/
-        r.Get("/{name}", handlers.GetGauge(stor))           //GET /value/gauge/name
-        r.HandleFunc("/{name}/*", handlers.BadRequest)      //ANY /value/gauge/name/asa
-    }
-}
-func valueCounterRoute(stor storage.RepositoriesGetter) func(r chi.Router){
-    return func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)                //ANY /value/counter/
-        r.Get("/{name}", handlers.GetCounter(stor))         //GET /value/counter/name
-        r.HandleFunc("/{name}/*", handlers.BadRequest)      //ANY /value/counter/name/qew
-    }
-}
 
 func main() {
+    flag.Parse()
 
-    r := chi.NewRouter()
 
     stor := storage.NewEmptyStorage()
 
-    r.Get("/", handlers.WriteAllMetrics(stor))                  //POST localhost:/
+    r := CreateRouter(stor)
 
-    r.Route("/update", func(r chi.Router) {
-        r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
+    r.Get("/", handlers.GetAllMetrics(stor))                  //POST localhost:/
 
 
-        r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
-
-        r.Route("/counter", updateCounterRoute(stor))     // Any /update/counter/*
-        
-    })
-
-    r.Route("/value", func(r chi.Router) {
-        r.HandleFunc("/*", handlers.BadRequest)            // Any /value/
-
-        r.Route("/gauge", valueGaugeRoute(stor))        
-
-        r.Route("/counter", valueCounterRoute(stor))   
-    })
-
-    err := http.ListenAndServe(`:8080`, r)
+    err := http.ListenAndServe(*fIpStr, r)
     if err != nil {
         panic(err)
     }

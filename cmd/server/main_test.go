@@ -1,15 +1,12 @@
 package main
 
 import (
-    "github.com/go-chi/chi/v5"
-
     "io"
     "errors"
     "testing"
     "net/http"
     "net/http/httptest"
 
-    "github.com/Ord1nI/metrix/cmd/handlers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,24 +48,7 @@ func (s *storageMock) GetCounter(name string) (int64, error){
 func TestMain(t *testing.T) {
     stor := newSM()
 
-    r := chi.NewRouter()
-
-    r.Route("/update", func(r chi.Router) {
-        r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
-
-        r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
-
-        r.Route("/counter", updateCounterRoute(stor))     // Any /update/counter/*
-    })
-
-    r.Route("/value", func(r chi.Router) {
-        r.HandleFunc("/*", handlers.BadRequest)            // Any /value/
-
-        r.Route("/gauge", valueGaugeRoute(stor))         // ANY /update/gauge/*
-
-        r.Route("/counter", valueCounterRoute(stor))     // Any /update/counter/*
-
-    })
+    r := CreateRouter(stor)
 
     serv := httptest.NewServer(r)
     client := serv.Client()
