@@ -8,7 +8,7 @@ import(
 var metrics map[string]float64
 
 var(
-    fIpStr = flag.String("a", "http://localhost:8080", "enter IP format ip:port")
+    fIPStr = flag.String("a", "localhost:8080", "enter IP format ip:port")
     fReportInterval = flag.Int64("r", 10, "enter REPORT INTERVAL in seconds")
     fPollInterval = flag.Int64("p", 2, "enter POOL INTERVAL in seconds")
 )
@@ -16,7 +16,7 @@ var(
 func main() {
     flag.Parse()
 
-    client := resty.New().SetBaseURL(*fIpStr)
+    client := resty.New().SetBaseURL("http://"+*fIPStr)
     StartClient(client)
 
 }

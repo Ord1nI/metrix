@@ -7,7 +7,7 @@ import (
     "github.com/Ord1nI/metrix/internal/handlers"
 )
 
-var fIpStr = flag.String("a",":8080","enter IP format ip:port")
+var fIPStr = flag.String("a",":8080","enter IP format ip:port")
 
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
     r.Get("/", handlers.GetAllMetrics(stor))                  //POST localhost:/
 
 
-    err := http.ListenAndServe(*fIpStr, r)
+    err := http.ListenAndServe(*fIPStr, r)
     if err != nil {
         panic(err)
     }
