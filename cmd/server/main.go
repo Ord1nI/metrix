@@ -48,9 +48,7 @@ func main() {
     r.Get("/", handlers.WriteAllMetrics(stor))                  //POST localhost:/
 
     r.Route("/update", func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)                      // ANY /update/
-
-        r.Post("/{name}/*", handlers.NotFound)          //Post /update/any/*
+        r.HandleFunc("/", handlers.BadRequest)                      // ANY /update/
 
         r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
 
@@ -59,7 +57,7 @@ func main() {
     })
 
     r.Route("/value", func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)            // Any /value/
+        r.HandleFunc("/", handlers.BadRequest)            // Any /value/
 
         r.Route("/gauge", valueGaugeRoute(stor))        
 

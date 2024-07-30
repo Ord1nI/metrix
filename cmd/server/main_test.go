@@ -116,6 +116,13 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
             },
         },
         {
+            URL: "/update/random/name/123",
+            want: want{
+                code:http.StatusNotFound,
+                res: "Not Found\n",
+            },
+        },
+        {
             URL: "/update/counter/name/123/asdf/",
             want: want{
                 code:http.StatusBadRequest,
