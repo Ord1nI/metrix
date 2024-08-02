@@ -48,11 +48,9 @@ func getConf() {
     }
 }
 
-func init() {
-    getConf()
-}
 
 func main() {
+    getConf()
     
     stor := storage.NewEmptyStorage()
 

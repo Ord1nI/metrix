@@ -363,7 +363,7 @@ func tGaugeGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *h
 
     tests := []struct{
         URL string
-        value float64
+        value storage.Gauge
         name string
         want want
     }{

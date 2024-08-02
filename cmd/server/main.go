@@ -21,7 +21,7 @@ func getConf() {
         panic(err)
     }
 
-    fAddress := flag.String("a", envVars.Address, "enter IP format ip:port")
+    var fAddress = flag.String("a", envVars.Address, "enter IP format ip:port")
 
     flag.Parse()
 
@@ -30,11 +30,9 @@ func getConf() {
     }
 }
 
-func init() {
-    getConf()
-}
 
 func main() {
+    getConf()
 
     stor := storage.NewEmptyStorage()
 
