@@ -2,37 +2,37 @@ package handlers
 
 import (
     "github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
     "errors"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+    "github.com/Ord1nI/metrix/internal/storage"
 )
 
 type storageMock struct{
-    val float64
+    val storage.Gauge
     name string
 }
 
-func (s *storageMock) GetGauge(name string) (float64, error) {
+func (s *storageMock) GetGauge(name string) (storage.Gauge, error) {
     if name == s.name {
         return s.val, nil
     }
     return 0, errors.New("error")
 }
-func (s *storageMock) AddGauge(name string, val float64) {
+func (s *storageMock) AddGauge(name string, val storage.Gauge) {
 }
-func (s *storageMock) GetCounter(name string) (int64, error) {
+func (s *storageMock) GetCounter(name string) (storage.Counter, error) {
     if name == s.name {
-        return int64(s.val), nil
+        return storage.Counter(s.val), nil
     }
     return 0, errors.New("error")
 }
-func (s *storageMock) AddCounter(name string, val int64) {
+func (s *storageMock) AddCounter(name string, val storage.Counter) {
 }
 
 
@@ -146,7 +146,7 @@ func TestGetGauge(t *testing.T) {
     tests := []struct{
         reqURL string
         name string
-        val float64
+        val storage.Gauge
         want want
     }{
         {
@@ -202,10 +202,11 @@ func TestGetCounter(t *testing.T) {
         code int
         response string
     }
+
     tests := []struct{
         reqURL string
         name string
-        val float64
+        val storage.Gauge
         want want
     }{
         {

@@ -9,7 +9,7 @@ import (
 func TestAddGauge(t *testing.T) {
     tests := []struct{
         name string
-        val float64
+        val Gauge
     }{
         {
         name:"test",
@@ -38,7 +38,7 @@ func TestAddGauge(t *testing.T) {
     for _, v := range tests {
         t.Run(v.name,func(t *testing.T){
         stor.AddGauge(v.name, v.val)
-        assert.Equal(t, v.val, stor.gauge[v.name])
+        assert.Equal(t, v.val, stor.Gauge[v.name])
         })
     }
 }
@@ -46,7 +46,7 @@ func TestAddGauge(t *testing.T) {
 func TestAddCounter(t *testing.T) {
     tests := []struct{
         name string
-        val int64
+        val Counter
     }{
         {
         name:"test",
@@ -71,14 +71,14 @@ func TestAddCounter(t *testing.T) {
     for _, v := range tests {
         t.Run(v.name,func(t *testing.T){
         stor.AddCounter(v.name, v.val)
-        assert.Equal(t, v.val, stor.counter[v.name])
+        assert.Equal(t, v.val, stor.Counter[v.name])
         })
     }
 }
 func TestGetGeoge(t *testing.T) {
     tests := []struct{
         name string
-        val float64
+        val Gauge
     }{
         {
         name:"test",
@@ -106,7 +106,7 @@ func TestGetGeoge(t *testing.T) {
 
     for _, test := range tests {
         t.Run(test.name, func(t*testing.T){
-        stor.gauge[test.name] = test.val
+        stor.Gauge[test.name] = test.val
         v, err := stor.GetGauge(test.name)
         assert.Equal(t, test.val, v)
         assert.Equal(t, nil, err)
@@ -116,7 +116,7 @@ func TestGetGeoge(t *testing.T) {
 func TestGetCounter(t *testing.T) {
     tests := []struct{
         name string
-        val int64
+        val Counter
     }{
         {
         name:"test",
@@ -144,7 +144,7 @@ func TestGetCounter(t *testing.T) {
 
     for _, test := range tests {
         t.Run(test.name, func(t*testing.T){
-        stor.counter[test.name] = test.val
+        stor.Counter[test.name] = test.val
         v, err := stor.GetCounter(test.name)
         assert.Equal(t, test.val, v)
         assert.Equal(t, nil, err)

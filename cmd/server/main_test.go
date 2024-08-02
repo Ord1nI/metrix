@@ -1,19 +1,22 @@
 package main
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+    "github.com/go-chi/chi/v5"
+
     "io"
     "errors"
     "testing"
     "net/http"
     "net/http/httptest"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+    "github.com/Ord1nI/metrix/internal/storage"
+    "github.com/Ord1nI/metrix/internal/handlers"
 )
 
 
 type storageMock struct{
-    val float64
+    val storage.Gauge
     name string
 }
 
@@ -23,24 +26,24 @@ func newSM() *storageMock{
     }
 }
 
-func (s *storageMock) AddGauge(name string, val float64) {
+func (s *storageMock) AddGauge(name string, val storage.Gauge) {
     s.val = val
 }
 
-func (s *storageMock) AddCounter(name string, val int64) {
-    s.val = float64(val)
+func (s *storageMock) AddCounter(name string, val storage.Counter) {
+    s.val = storage.Gauge(val)
 }
 
-func (s *storageMock) GetGauge(name string) (float64, error){
+func (s *storageMock) GetGauge(name string) (storage.Gauge, error){
     if s.name == name {
         return s.val, nil
     }
     return 0, errors.New("error")
 }
 
-func (s *storageMock) GetCounter(name string) (int64, error){
+func (s *storageMock) GetCounter(name string) (storage.Counter, error){
     if s.name == name {
-        return int64(s.val), nil
+        return storage.Counter(s.val), nil
     }
     return 0, errors.New("error")
 }
@@ -48,7 +51,25 @@ func (s *storageMock) GetCounter(name string) (int64, error){
 func TestMain(t *testing.T) {
     stor := newSM()
 
-    r := CreateRouter(stor)
+    r := chi.NewRouter()
+
+    r.Route("/update", func(r chi.Router) {
+        r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
+
+
+        r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
+
+        r.Route("/counter", updateCounterRoute(stor))     // Any /update/counter/*
+        
+    })
+
+    r.Route("/value", func(r chi.Router) {
+        r.HandleFunc("/*", handlers.BadRequest)            // Any /value/
+
+        r.Route("/gauge", valueGaugeRoute(stor))        
+
+        r.Route("/counter", valueCounterRoute(stor))   
+    })
 
     serv := httptest.NewServer(r)
     client := serv.Client()
@@ -65,7 +86,7 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
     type want struct {
         code int
         res string
-        val float64
+        val storage.Gauge
     }
 
     tests := []struct{
@@ -164,7 +185,7 @@ func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http
     type want struct {
         code int
         res string
-        val float64
+        val storage.Gauge
     }
 
     tests := []struct{
@@ -259,7 +280,7 @@ func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client 
 
     tests := []struct{
         URL string
-        value int64
+        value storage.Counter
         name string
         want want
     }{
@@ -319,7 +340,7 @@ func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client 
     for _, test := range tests {
         t.Run(test.URL, func(t *testing.T) {
 
-            stor.val = float64(test.value)
+            stor.val = storage.Gauge(test.value)
 
             stor.name = test.name
 
@@ -420,7 +441,7 @@ func tGaugeGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *h
     for _, test := range tests {
         t.Run(test.URL, func(t *testing.T) {
 
-            stor.val = test.value
+            stor.val = storage.Gauge(test.value)
 
             stor.name = test.name
 
