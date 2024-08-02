@@ -17,8 +17,7 @@ type Config struct {
 var (
     envVars Config
 )
-
-func init() {
+func getConf() {
     err := env.Parse(&envVars)
 
     if err != nil {
@@ -36,6 +35,10 @@ func init() {
     if envVars.ReportInterval == 10 {
         envVars.ReportInterval = *flag.Int64("r", envVars.ReportInterval, "enter REPORT INTERVAL in seconds")
     }
+}
+
+func init() {
+    getConf()
 }
 
 func main() {

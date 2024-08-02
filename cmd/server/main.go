@@ -13,14 +13,20 @@ type Config struct {
 }
 
 var envVars Config
+func getConf() {
+    err := env.Parse(&envVars)
+
+    if err != nil {
+        panic(err)
+    }
+
+    if envVars.Address == "localhost:8080" {
+        envVars.Address = *flag.String("a", envVars.Address, "enter IP format ip:port")
+    }
+}
 
 func init() {
-
-    env.Parse(&envVars)
-
-    if envVars.Address == "" {
-        envVars.Address = *flag.String("a", "localhost:8080", "enter IP format ip:port")
-    }
+    getConf()
 }
 
 func main() {
