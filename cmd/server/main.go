@@ -13,6 +13,7 @@ type Config struct {
 }
 
 var envVars Config
+
 func getConf() {
     err := env.Parse(&envVars)
 
@@ -20,8 +21,12 @@ func getConf() {
         panic(err)
     }
 
+    fAddress := flag.String("a", envVars.Address, "enter IP format ip:port")
+
+    flag.Parse()
+
     if envVars.Address == "localhost:8080" {
-        envVars.Address = *flag.String("a", envVars.Address, "enter IP format ip:port")
+        envVars.Address = *fAddress
     }
 }
 
@@ -30,7 +35,6 @@ func init() {
 }
 
 func main() {
-    flag.Parse()
 
     stor := storage.NewEmptyStorage()
 
