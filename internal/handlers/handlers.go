@@ -6,6 +6,7 @@ import (
     "net/http"
     "strconv"
     "bytes"
+    "sort"
     "io"
     "github.com/Ord1nI/metrix/internal/storage"
 )
@@ -24,7 +25,7 @@ func UpdateGauge(s storage.Adder) func(res http.ResponseWriter, req *http.Reques
             return
         }
 
-        s.AddGauge(name,val)
+        s.AddGauge(name,storage.Gauge(val))
         res.WriteHeader(http.StatusOK)
     }
 }
@@ -42,7 +43,7 @@ func UpdateCounter(s storage.Adder) func(res http.ResponseWriter, req *http.Requ
             return
         }
 
-        s.AddCounter(name, val)
+        s.AddCounter(name, storage.Counter(val))
         res.WriteHeader(http.StatusOK)
     }
 }
@@ -58,7 +59,7 @@ func GetGauge(s storage.Getter) func(res http.ResponseWriter, req *http.Request)
         }
 
         res.WriteHeader(http.StatusOK)
-        io.WriteString(res, strconv.FormatFloat(v, 'f', -1, 64))
+        io.WriteString(res, strconv.FormatFloat(float64(v), 'f', -1, 64))
         res.Write([]byte("\n"))
     }
 }
@@ -75,32 +76,49 @@ func GetCounter(s storage.Getter) func(res http.ResponseWriter, req *http.Reques
         }
 
         res.WriteHeader(http.StatusOK)
-        io.WriteString(res, strconv.FormatInt(v, 10))
+        io.WriteString(res, strconv.FormatInt(int64(v), 10))
         res.Write([]byte("\n"))
     }
 
 }
+
 func GetAllMetrics(stor *storage.MemStorage) func(res http.ResponseWriter, req *http.Request) {
     return func(res http.ResponseWriter, req *http.Request) {
         var html bytes.Buffer
         html.WriteString(`<html>
                           <body>`)
 
-        metrics := stor.GetAll()
+        GaugeNameArr := stor.GetGaugeNames()
+        sort.Strings(GaugeNameArr)
+        CounterNameArr := stor.GetCounterNames()
+        sort.Strings(CounterNameArr)
 
-        for _, i := range metrics {
+        html.WriteString(`<b> GAUGE METRICS: </b>`)
+
+        for _, i := range GaugeNameArr {
             html.WriteString(`<p>`)
-            html.WriteString(i.Name)
+            html.WriteString(i)
             html.WriteString(" = ")
-            html.WriteString(strconv.FormatFloat(i.Val, 'f', -1, 64))
+            html.WriteString(strconv.FormatFloat(float64(stor.Gauge[i]), 'f', -1, 64))
             html.WriteString(`</p>`)
         }
+        html.WriteString(`<b> COUNTER METRICS: </b>`)
+
+        for _, i := range CounterNameArr {
+            html.WriteString(`<p>`)
+            html.WriteString(i)
+            html.WriteString(" = ")
+            html.WriteString(strconv.FormatInt(int64(stor.Counter[i]), 10))
+            html.WriteString(`</p>`)
+        }
+
         html.WriteString(`</html>
                           </body>`)
         res.WriteHeader(http.StatusOK)
         res.Write(html.Bytes())
     }
 }
+
 func NotFound(res http.ResponseWriter, req *http.Request) {
     res.WriteHeader(http.StatusNotFound)
     res.Write([]byte("Not Found\n"))

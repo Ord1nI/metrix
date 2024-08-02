@@ -36,10 +36,11 @@ func valueCounterRoute(stor storage.Getter) func(r chi.Router){
     }
 }
 
-func CreateRouter(stor storage.GetterAdder) *chi.Mux{
+func CreateRouter(stor *storage.MemStorage) *chi.Mux{
 
     r := chi.NewRouter()
 
+    r.Get("/", handlers.GetAllMetrics(stor))                  //POST localhost:/
 
     r.Route("/update", func(r chi.Router) {
         r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
@@ -58,5 +59,6 @@ func CreateRouter(stor storage.GetterAdder) *chi.Mux{
 
         r.Route("/counter", valueCounterRoute(stor))   
     })
+
     return r
 }

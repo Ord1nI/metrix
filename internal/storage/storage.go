@@ -2,78 +2,84 @@ package storage
 
 import (
     "fmt"
-    "sort"
+    // "sort"
 )
 
+type Gauge float64
+type Counter int64
+
 type Getter interface{
-    GetGauge(name string) (float64, error)
-    GetCounter(name string) (int64, error)
+    GetGauge(name string) (Gauge, error)
+    GetCounter(name string) (Counter, error)
 }
 
 type Adder interface{
-    AddCounter(name string, val int64)
-    AddGauge(name string, val float64)
+    AddGauge(name string, val Gauge)
+    AddCounter(name string, val Counter)
 }
 
-type GetterAdder interface{
+type GetAdder interface{
     Adder
     Getter
 }
 
-
 type MemStorage struct{
-    gauge map[string]float64
-    counter map[string]int64
-}
-
-type metric struct {
-    Name string
-    Val float64
+    Gauge map[string]Gauge
+    Counter map[string]Counter
 }
 
 func NewEmptyStorage() *MemStorage{
     return &MemStorage{ 
-        gauge: make(map[string]float64),
-        counter: make(map[string]int64),
+        Gauge: make(map[string]Gauge),
+        Counter: make(map[string]Counter),
     }
 }
 
-func (m *MemStorage) GetGauge(name string) (float64, error) {
-    val, ok := m.gauge[name]
+func (m *MemStorage) GetGauge(name string) (Gauge, error) {
+    val, ok := m.Gauge[name]
     if !ok {
         return 0, fmt.Errorf("no %s in Gauge", name)
     }
     return val, nil
 }
 
-func (m *MemStorage) GetCounter(name string) (int64, error) {
-    val, ok := m.counter[name]
+func (m *MemStorage) GetCounter(name string) (Counter, error) {
+    val, ok := m.Counter[name]
     if !ok {
         return 0, fmt.Errorf("no %s in Counter", name)
     }
     return val, nil
 }
 
-func (m *MemStorage) AddGauge(name string, val float64){
-    m.gauge[name] = val
+func (m *MemStorage) AddGauge(name string, val Gauge) {
+    m.Gauge[name] = val
 }
 
-func (m *MemStorage) AddCounter(name string, val int64){
-    m.counter[name] += val
+func (m *MemStorage) AddCounter(name string, val Counter) {
+    m.Counter[name] += val
 }
 
-func (m *MemStorage) GetAll() []metric{
-    r := make([]metric,0,len(m.gauge) +len(m.counter))
+func (m *MemStorage) AddGaugeMap(mG map[string]Gauge) {
+    m.Gauge = mG
+}
 
-    for i, v := range m.gauge {
-        r = append(r, metric{i,v})
+func (m *MemStorage) AddCounterMap(mC map[string]Counter) {
+    m.Counter = mC
+}
+
+func (m *MemStorage) GetGaugeNames() []string{
+    arr := make([]string, 0, len(m.Gauge))
+    for i := range m.Gauge {
+        arr = append(arr, i)
+    }
+    return arr
+}
+
+func (m *MemStorage) GetCounterNames() []string{
+    arr := make([]string, 0, len(m.Counter))
+    for i := range m.Counter {
+        arr = append(arr, i)
     }
 
-    for i, v := range m.counter {
-        r = append(r, metric{i,float64(v)})
-    }
-
-    sort.SliceStable(r,func(i, j int) bool { return r[i].Name < r[j].Name})
-
-    return r
+    return arr
 }

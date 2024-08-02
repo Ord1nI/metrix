@@ -3,6 +3,7 @@ package main
 import (
     "github.com/go-resty/resty/v2"
 
+    "github.com/Ord1nI/metrix/internal/storage"
     "runtime"
     "strconv"
     "math/rand"
@@ -14,49 +15,53 @@ import (
 )
 
 
-func collectMetrics() {
+func collectMetrics(stor *storage.MemStorage) {
     var mS runtime.MemStats
     runtime.ReadMemStats(&mS)
-    metrics = map[string]float64{
-        "Alloc" : float64(mS.Alloc),
-        "BuckHashSys" : float64(mS.BuckHashSys),
-        "Frees" : float64(mS.Frees),
-        "GCCPUFraction" : float64(mS.GCCPUFraction),
-        "GCSys" : float64(mS.GCSys),
-        "HeapAlloc" : float64(mS.HeapAlloc),
-        "HeapIdle" : float64(mS.HeapIdle),
-        "HeapInuse" : float64(mS.HeapInuse),
-        "HeapObjects" : float64(mS.HeapObjects),
-        "HeapReleased" : float64(mS.HeapReleased),
-        "HeapSys" : float64(mS.HeapSys),
-        "LastGC" : float64(mS.LastGC),
-        "Lookups" : float64(mS.Lookups),
-        "MCacheInuse" : float64(mS.MCacheInuse),
-        "MCacheSys" : float64(mS.MCacheSys),
-        "MSpanInuse" : float64(mS.MSpanInuse),
-        "MSpanSys" : float64(mS.MSpanSys),
-        "Mallocs" : float64(mS.Mallocs),
-        "NextGC" : float64(mS.NextGC),
-        "NumForcedGC" : float64(mS.NumForcedGC),
-        "NumGC" : float64(mS.NumGC),
-        "OtherSys" : float64(mS.OtherSys),
-        "PauseTotalNs" : float64(mS.PauseTotalNs),
-        "StackInuse" : float64(mS.StackInuse),
-        "StackSys" : float64(mS.StackSys),
-        "Sys" : float64(mS.Sys),
-        "TotalAlloc" : float64(mS.TotalAlloc),
-        "RandomValue" : rand.Float64(),
+    mGauge  := map[string]storage.Gauge{
+        "Alloc" : storage.Gauge(mS.Alloc),
+        "BuckHashSys" : storage.Gauge(mS.BuckHashSys),
+        "Frees" : storage.Gauge(mS.Frees),
+        "GCCPUFraction" : storage.Gauge(mS.GCCPUFraction),
+        "GCSys" : storage.Gauge(mS.GCSys),
+        "HeapAlloc" : storage.Gauge(mS.HeapAlloc),
+        "HeapIdle" : storage.Gauge(mS.HeapIdle),
+        "HeapInuse" : storage.Gauge(mS.HeapInuse),
+        "HeapObjects" : storage.Gauge(mS.HeapObjects),
+        "HeapReleased" : storage.Gauge(mS.HeapReleased),
+        "HeapSys" : storage.Gauge(mS.HeapSys),
+        "LastGC" : storage.Gauge(mS.LastGC),
+        "Lookups" : storage.Gauge(mS.Lookups),
+        "MCacheInuse" : storage.Gauge(mS.MCacheInuse),
+        "MCacheSys" : storage.Gauge(mS.MCacheSys),
+        "MSpanInuse" : storage.Gauge(mS.MSpanInuse),
+        "MSpanSys" : storage.Gauge(mS.MSpanSys),
+        "Mallocs" : storage.Gauge(mS.Mallocs),
+        "NextGC" : storage.Gauge(mS.NextGC),
+        "NumForcedGC" : storage.Gauge(mS.NumForcedGC),
+        "NumGC" : storage.Gauge(mS.NumGC),
+        "OtherSys" : storage.Gauge(mS.OtherSys),
+        "PauseTotalNs" : storage.Gauge(mS.PauseTotalNs),
+        "StackInuse" : storage.Gauge(mS.StackInuse),
+        "StackSys" : storage.Gauge(mS.StackSys),
+        "Sys" : storage.Gauge(mS.Sys),
+        "TotalAlloc" : storage.Gauge(mS.TotalAlloc),
+        "RandomValue" : storage.Gauge(rand.Float64()),
     }
+
+    stor.AddGaugeMap(mGauge)
+
 }
 
 
-func SendGaugeMetrics(client *resty.Client) error{
-    for i, v := range metrics {
+func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
+    for i, v := range stor.Gauge {
         var builder strings.Builder
         builder.WriteString("/update/gauge/")
         builder.WriteString(i)
         builder.WriteRune('/')
-        builder.WriteString(strconv.FormatFloat(v, 'f', -1, 64))
+        builder.WriteString(strconv.FormatFloat(float64(v), 'f', -1, 64))
+
         res, err := client.R().
             ExpectContentType("text/plain").
             Post(builder.String())
@@ -64,22 +69,21 @@ func SendGaugeMetrics(client *resty.Client) error{
         if err != nil {
             return err
         }
+        
         if res.StatusCode() != http.StatusOK {
             return errors.New("doesnt sent")
         }
     }
     return nil
 }
-func StartClient(client *resty.Client) {
-    reportInterval := *fReportInterval
-    pollInterval := *fPollInterval
+func StartClient(client *resty.Client, stor *storage.MemStorage) {
     for {
-        for i := int64(0); i < reportInterval / pollInterval; i++ {
-            collectMetrics()
-            time.Sleep(time.Second * time.Duration(pollInterval))
+        for i := int64(0); i < envVars.ReportInterval / envVars.PollInterval; i++ {
+            collectMetrics(stor)
+            time.Sleep(time.Second * time.Duration(envVars.PollInterval))
         }
 
-        err := SendGaugeMetrics(client)
+        err := SendGaugeMetrics(client, stor)
 
         if err != nil {
             fmt.Println(err)

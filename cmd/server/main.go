@@ -6,23 +6,20 @@ import (
     "flag"
     "net/http"
     "github.com/Ord1nI/metrix/internal/storage"
-    "github.com/Ord1nI/metrix/internal/handlers"
 )
+
 type Config struct {
-    Address string `env:"ADDRESS"`
+    Address string `env:"ADDRESS" envDefault:"localhost:8080"` //envvar $ADDRESS or envDefault
 }
 
 var envVars Config
-var fIPStr *string 
 
 func init() {
 
     env.Parse(&envVars)
 
     if envVars.Address == "" {
-        fIPStr = flag.String("a", "localhost:8080", "enter IP format ip:port")
-    } else {
-        fIPStr = &envVars.Address
+        envVars.Address = *flag.String("a", "localhost:8080", "enter IP format ip:port")
     }
 }
 
@@ -33,10 +30,8 @@ func main() {
 
     r := CreateRouter(stor)
 
-    r.Get("/", handlers.GetAllMetrics(stor))                  //POST localhost:/
 
-
-    err := http.ListenAndServe(*fIPStr, r)
+    err := http.ListenAndServe(envVars.Address, r)
     if err != nil {
         panic(err)
     }
