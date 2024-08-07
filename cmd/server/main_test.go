@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
     "github.com/go-chi/chi/v5"
+    "go.uber.org/zap"
 
     "io"
     "errors"
@@ -51,6 +52,9 @@ func (s *storageMock) GetCounter(name string) (storage.Counter, error){
 func TestMain(t *testing.T) {
     stor := newSM()
 
+    logger := zap.NewNop()
+    sugar = logger.Sugar()
+    
     r := chi.NewRouter()
 
     r.Route("/update", func(r chi.Router) {

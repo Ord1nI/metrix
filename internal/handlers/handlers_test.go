@@ -66,7 +66,7 @@ func TestUpdateGauge(t *testing.T) {
     }
 
     r := chi.NewRouter()
-    r.Post("/update/gauge/{name}/{val}",UpdateGauge(&storageMock{}))
+    r.Method(http.MethodPost, "/update/gauge/{name}/{val}", UpdateGauge(&storageMock{}))
 
     for _, test := range tests{
         t.Run(test.name, func(t *testing.T) {
@@ -117,7 +117,7 @@ func TestUpdateCounter(t *testing.T) {
         },
     }
     r := chi.NewRouter()
-    r.Post("/update/counter/{name}/{val}",UpdateCounter(&storageMock{}))
+    r.Method(http.MethodPost, "/update/counter/{name}/{val}", UpdateCounter(&storageMock{}))
     for _, test := range tests{
         t.Run(test.name, func(t *testing.T) {
             req := httptest.NewRequest(http.MethodPost, test.reqURL, nil)
@@ -170,7 +170,7 @@ func TestGetGauge(t *testing.T) {
     stor := &storageMock{}
 
     r := chi.NewRouter()
-    r.Post("/value/gauge/{name}",GetGauge(stor))
+    r.Method(http.MethodPost, "/value/gauge/{name}", GetGauge(stor))
 
     for _, test := range tests{
         stor.val = test.val
@@ -230,7 +230,7 @@ func TestGetCounter(t *testing.T) {
     stor := &storageMock{}
 
     r := chi.NewRouter()
-    r.Post("/value/counter/{name}",GetCounter(stor))
+    r.Method(http.MethodPost, "/value/counter/{name}", GetCounter(stor))
 
     for _, test := range tests{
         stor.val = test.val

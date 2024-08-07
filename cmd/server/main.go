@@ -2,10 +2,12 @@ package main
 
 import (
     "github.com/caarlos0/env/v11"
+    "go.uber.org/zap"
 
     "flag"
     "net/http"
     "github.com/Ord1nI/metrix/internal/storage"
+    "github.com/Ord1nI/metrix/internal/logger"
 )
 
 type Config struct {
@@ -13,6 +15,8 @@ type Config struct {
 }
 
 var envVars Config
+
+var sugar *zap.SugaredLogger
 
 func getConf() {
     err := env.Parse(&envVars)
@@ -34,12 +38,22 @@ func getConf() {
 func main() {
     getConf()
 
+    logger, logErr := logger.NewLogger()
+    logger.WithOptions(zap.AddCaller())
+    if logErr != nil {
+        panic(logErr)
+    }
+
+    defer logger.Sync()
+
+    sugar = logger.Sugar()
+
     stor := storage.NewEmptyStorage()
 
     r := CreateRouter(stor)
 
-
     err := http.ListenAndServe(envVars.Address, r)
+
     if err != nil {
         panic(err)
     }
