@@ -48,44 +48,25 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
     r.responseData.status = statusCode
 }
 
-func HandlerLogging(h http.Handler, logger *zap.SugaredLogger) http.Handler{
-    logFn := func(w http.ResponseWriter, r *http.Request) {
-        start := time.Now()
+func HandlerLogging(logger *zap.SugaredLogger) func(http.Handler) http.Handler{
+    return func(h http.Handler) http.Handler{
+        logFn := func(w http.ResponseWriter, r *http.Request) {
+            start := time.Now()
 
-        lw := newLoggingResponseWriter(w)
+            lw := newLoggingResponseWriter(w)
 
-        h.ServeHTTP(lw, r)
+            h.ServeHTTP(lw, r)
 
-        duration := time.Since(start)
+            duration := time.Since(start)
 
-        logger.Infoln(
-            "uri", r.RequestURI,
-            "method", r.Method,
-            "status", lw.responseData.status,
-            "duration", duration,
-            "size", lw.responseData.size,
-        )
+            logger.Infoln(
+                "uri", r.RequestURI,
+                "method", r.Method,
+                "status", lw.responseData.status,
+                "duration", duration,
+                "size", lw.responseData.size,
+            )
+        }
+        return http.HandlerFunc(logFn)
     }
-    return http.HandlerFunc(logFn)
-}
-
-func HandlerLoggingFn(fl func(w http.ResponseWriter, r* http.Request), logger *zap.SugaredLogger) http.Handler{
-    logFn := func(w http.ResponseWriter, r *http.Request) {
-        start := time.Now()
-
-        lw := newLoggingResponseWriter(w)
-
-        fl(lw, r)
-
-        duration := time.Since(start)
-
-        logger.Infoln(
-            "uri", r.RequestURI,
-            "method", r.Method,
-            "status", lw.responseData.status,
-            "duration", duration,
-            "size", lw.responseData.size,
-        )
-    }
-    return http.HandlerFunc(logFn)
 }
