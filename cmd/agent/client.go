@@ -10,7 +10,6 @@ import (
     "strings"
     "errors"
     "time"
-    "fmt"
     "net/http"
 )
 
@@ -86,9 +85,9 @@ func StartClient(client *resty.Client, stor *storage.MemStorage) {
         err := SendGaugeMetrics(client, stor)
 
         if err != nil {
-            fmt.Println(err)
+            sugar.Errorln(err)
         } else {
-            fmt.Println("Gauge metrics sent")
+            sugar.Infoln("Gauge metrics sent")
         }
 
         res, err := client.R().
@@ -96,9 +95,9 @@ func StartClient(client *resty.Client, stor *storage.MemStorage) {
             Post("/update/counter/PollCount/1")
 
         if err != nil || res.StatusCode() != http.StatusOK{
-            fmt.Println("Counter metrics wasnt't sended")
+            sugar.Infoln("Counter metrics wasnt't sended")
         } else {
-            fmt.Println("Counter metrics sented")
+            sugar.Infoln("Counter metrics sented")
         }
     }    
 }

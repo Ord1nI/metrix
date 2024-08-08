@@ -3,8 +3,10 @@ package main
 import(
     "github.com/go-resty/resty/v2"
     "github.com/caarlos0/env/v11"
+    "go.uber.org/zap"
 
     "github.com/Ord1nI/metrix/internal/storage"
+    "github.com/Ord1nI/metrix/internal/logger"
     "flag"
 )
 
@@ -16,6 +18,7 @@ type Config struct {
 
 var (
     envVars Config
+    sugar *zap.SugaredLogger
 )
 
 func getConf() {
@@ -51,6 +54,16 @@ func getConf() {
 
 func main() {
     getConf()
+
+    logger, err := logger.NewLogger()
+
+    if err != nil {
+        panic(err)
+    }
+    
+    defer logger.Sync()
+
+    sugar = logger.Sugar()
     
     stor := storage.NewEmptyStorage()
 

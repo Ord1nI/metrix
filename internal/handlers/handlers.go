@@ -12,8 +12,8 @@ import (
 )
 
 
-func UpdateGauge(s storage.Adder) func(res http.ResponseWriter, req *http.Request) {
-    return func(res http.ResponseWriter, req *http.Request) {
+func UpdateGauge(s storage.Adder) http.Handler {
+    fHandler := func(res http.ResponseWriter, req *http.Request) {
         
         name := chi.URLParam(req, "name")
         v := chi.URLParam(req, "val")
@@ -28,10 +28,11 @@ func UpdateGauge(s storage.Adder) func(res http.ResponseWriter, req *http.Reques
         s.AddGauge(name,storage.Gauge(val))
         res.WriteHeader(http.StatusOK)
     }
+    return http.HandlerFunc(fHandler)
 }
 
-func UpdateCounter(s storage.Adder) func(res http.ResponseWriter, req *http.Request){
-    return func(res http.ResponseWriter, req *http.Request) {
+func UpdateCounter(s storage.Adder) http.Handler{
+    fHandler := func(res http.ResponseWriter, req *http.Request) {
 
         name := chi.URLParam(req, "name")
         v := chi.URLParam(req, "val")
@@ -46,10 +47,11 @@ func UpdateCounter(s storage.Adder) func(res http.ResponseWriter, req *http.Requ
         s.AddCounter(name, storage.Counter(val))
         res.WriteHeader(http.StatusOK)
     }
+    return http.HandlerFunc(fHandler)
 }
 
-func GetGauge(s storage.Getter) func(res http.ResponseWriter, req *http.Request) {
-    return func(res http.ResponseWriter, req *http.Request) {
+func GetGauge(s storage.Getter) http.Handler {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
         v, err := s.GetGauge(name)
 
@@ -62,11 +64,12 @@ func GetGauge(s storage.Getter) func(res http.ResponseWriter, req *http.Request)
         io.WriteString(res, strconv.FormatFloat(float64(v), 'f', -1, 64))
         res.Write([]byte("\n"))
     }
+    return http.HandlerFunc(fHandler)
 }
 
-func GetCounter(s storage.Getter) func(res http.ResponseWriter, req *http.Request){
+func GetCounter(s storage.Getter) http.Handler {
 
-    return func(res http.ResponseWriter, req *http.Request) {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
         v, err := s.GetCounter(name)
 
@@ -79,11 +82,11 @@ func GetCounter(s storage.Getter) func(res http.ResponseWriter, req *http.Reques
         io.WriteString(res, strconv.FormatInt(int64(v), 10))
         res.Write([]byte("\n"))
     }
-
+    return http.HandlerFunc(fHandler)
 }
 
-func GetAllMetrics(stor *storage.MemStorage) func(res http.ResponseWriter, req *http.Request) {
-    return func(res http.ResponseWriter, req *http.Request) {
+func GetAllMetrics(stor *storage.MemStorage) http.Handler {
+    fHandler := func(res http.ResponseWriter, req *http.Request) {
         var html bytes.Buffer
         html.WriteString(`<html>
                           <body>`)
@@ -117,6 +120,7 @@ func GetAllMetrics(stor *storage.MemStorage) func(res http.ResponseWriter, req *
         res.WriteHeader(http.StatusOK)
         res.Write(html.Bytes())
     }
+    return http.HandlerFunc(fHandler)
 }
 
 func NotFound(res http.ResponseWriter, req *http.Request) {
