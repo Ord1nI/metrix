@@ -18,11 +18,22 @@ var envVars Config
 
 var sugar *zap.SugaredLogger
 
+func initLogger(log *zap.Logger) error{
+    log, logErr := logger.NewLogger()
+    if logErr != nil {
+        return logErr
+    }
+    sugar = log.Sugar()
+
+    return nil
+}
+
 func getConf() {
     err := env.Parse(&envVars)
 
     if err != nil {
-        panic(err)
+        sugar.Error("Couldn't get env vars")
+        envVars.Address = "localhost:8080"
     }
 
     var fAddress = flag.String("a", envVars.Address, "enter IP format ip:port")
@@ -36,17 +47,11 @@ func getConf() {
 
 
 func main() {
+    var log *zap.Logger
+    initLogger(log)
+    defer log.Sync()
+
     getConf()
-
-    logger, logErr := logger.NewLogger()
-    logger.WithOptions(zap.AddCaller())
-    if logErr != nil {
-        panic(logErr)
-    }
-
-    defer logger.Sync()
-
-    sugar = logger.Sugar()
 
     stor := storage.NewEmptyStorage()
 

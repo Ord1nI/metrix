@@ -21,11 +21,25 @@ var (
     sugar *zap.SugaredLogger
 )
 
+func initLogger(log *zap.Logger) error{
+    log, logErr := logger.NewLogger()
+    if logErr != nil {
+        return logErr
+    }
+    sugar = log.Sugar()
+
+    return nil
+}
+
 func getConf() {
     err := env.Parse(&envVars)
 
     if err != nil {
-        panic(err)
+        sugar.Error(err)
+
+        envVars.Address = "localhost:8080"
+        envVars.PollInterval = 2
+        envVars.ReportInterval = 10
     }
 
     var (
@@ -53,17 +67,14 @@ func getConf() {
 
 
 func main() {
+    var log *zap.Logger
+
+    initLogger(log)
+    
+    defer log.Sync()
+
     getConf()
 
-    logger, err := logger.NewLogger()
-
-    if err != nil {
-        panic(err)
-    }
-    
-    defer logger.Sync()
-
-    sugar = logger.Sugar()
     
     stor := storage.NewEmptyStorage()
 

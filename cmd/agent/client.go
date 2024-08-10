@@ -85,7 +85,7 @@ func StartClient(client *resty.Client, stor *storage.MemStorage) {
         err := SendGaugeMetrics(client, stor)
 
         if err != nil {
-            sugar.Errorln(err)
+            sugar.Infoln(err)
         } else {
             sugar.Infoln("Gauge metrics sent")
         }
