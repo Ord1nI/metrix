@@ -21,14 +21,14 @@ var (
     sugar *zap.SugaredLogger
 )
 
-func initLogger(log *zap.Logger) error{
+func initLogger() (*zap.Logger, error){
     log, logErr := logger.NewLogger()
     if logErr != nil {
-        return logErr
+        return nil,logErr
     }
     sugar = log.Sugar()
 
-    return nil
+    return log, nil
 }
 
 func getConf() {
@@ -67,10 +67,10 @@ func getConf() {
 
 
 func main() {
-    var log *zap.Logger
-
-    initLogger(log)
-    
+    log, err := initLogger()
+    if err != nil {
+        panic(err)
+    }
     defer log.Sync()
 
     getConf()
