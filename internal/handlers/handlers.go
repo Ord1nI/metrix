@@ -4,12 +4,15 @@ package handlers
 import (
     "github.com/go-chi/chi/v5"
 
+    "slices"
+    "cmp"
+    "bytes"
     "net/http"
     "strconv"
-    "bytes"
-    "sort"
     "io"
     "github.com/Ord1nI/metrix/internal/storage"
+    "github.com/Ord1nI/metrix/internal/myjson"
+    "encoding/json"
 )
 
 
@@ -26,7 +29,7 @@ func UpdateGauge(s storage.Adder) http.Handler {
             return
         }
 
-        s.AddGauge(name,storage.Gauge(val))
+        s.Add(name, storage.Gauge(val))
         res.WriteHeader(http.StatusOK)
     }
     return http.HandlerFunc(fHandler)
@@ -45,7 +48,7 @@ func UpdateCounter(s storage.Adder) http.Handler{
             return
         }
 
-        s.AddCounter(name, storage.Counter(val))
+        s.Add(name, storage.Counter(val))
         res.WriteHeader(http.StatusOK)
     }
     return http.HandlerFunc(fHandler)
@@ -54,7 +57,8 @@ func UpdateCounter(s storage.Adder) http.Handler{
 func GetGauge(s storage.Getter) http.Handler {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
-        v, err := s.GetGauge(name)
+        var v storage.Gauge
+        err := s.Get(name, &v)
 
         if err != nil {
             http.Error(res, "Unknown metric", http.StatusNotFound)
@@ -72,7 +76,8 @@ func GetCounter(s storage.Getter) http.Handler {
 
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
-        v, err := s.GetCounter(name)
+        var v storage.Counter
+        err := s.Get(name, &v)
 
         if err != nil {
             http.Error(res, "Unknown metric", http.StatusNotFound)
@@ -85,44 +90,58 @@ func GetCounter(s storage.Getter) http.Handler {
     }
     return http.HandlerFunc(fHandler)
 }
+func MainPage(m json.Marshaler) http.Handler {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
-func GetAllMetrics(stor *storage.MemStorage) http.Handler {
-    fHandler := func(res http.ResponseWriter, req *http.Request) {
+        var metricArr []myjson.Metric
+
+        data, err := json.Marshal(m)
+
+        if err != nil {
+            http.Error(res, "error", http.StatusNotFound)
+        }
+
+        err = json.Unmarshal(data, &metricArr)
+
+        if err != nil {
+            http.Error(res, "couldn't unmarshal", http.StatusNotFound)
+        }
+
+        slices.SortStableFunc(metricArr, func(a,b myjson.Metric) int {
+            return cmp.Compare(a.ID, b.ID)})
+
         var html bytes.Buffer
+
         html.WriteString(`<html>
                           <body>`)
 
-        GaugeNameArr := stor.GetGaugeNames()
-        sort.Strings(GaugeNameArr)
-        CounterNameArr := stor.GetCounterNames()
-        sort.Strings(CounterNameArr)
-
-        html.WriteString(`<b> GAUGE METRICS: </b>`)
-
-        for _, i := range GaugeNameArr {
-            html.WriteString(`<p>`)
-            html.WriteString(i)
-            html.WriteString(" = ")
-            html.WriteString(strconv.FormatFloat(float64(stor.Gauge[i]), 'f', -1, 64))
-            html.WriteString(`</p>`)
-        }
-        html.WriteString(`<b> COUNTER METRICS: </b>`)
-
-        for _, i := range CounterNameArr {
-            html.WriteString(`<p>`)
-            html.WriteString(i)
-            html.WriteString(" = ")
-            html.WriteString(strconv.FormatInt(int64(stor.Counter[i]), 10))
-            html.WriteString(`</p>`)
+        for _, v := range metricArr {
+            if v.MType == "gauge" {
+                html.WriteString(`<p>`)
+                html.WriteString(v.ID)
+                html.WriteString(" = ")
+                html.WriteString(strconv.FormatFloat(*v.Value, 'f', -1, 64))
+                html.WriteString(`</p>`)
+            }
+            if v.MType == "counter" {
+                html.WriteString(`<p>`)
+                html.WriteString(v.ID)
+                html.WriteString(" = ")
+                html.WriteString(strconv.FormatInt(*v.Delta, 10))
+                html.WriteString(`</p>`)
+            }
         }
 
         html.WriteString(`</html>
                           </body>`)
+
         res.WriteHeader(http.StatusOK)
         res.Write(html.Bytes())
     }
+
     return http.HandlerFunc(fHandler)
 }
+
 
 func NotFound(res http.ResponseWriter, req *http.Request) {
     res.WriteHeader(http.StatusNotFound)

@@ -53,7 +53,7 @@ func main() {
 
     getConf()
 
-    stor := storage.NewEmptyStorage()
+    stor := storage.NewMemStorage()
 
     r := CreateRouter(stor)
 

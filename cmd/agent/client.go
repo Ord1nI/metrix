@@ -48,13 +48,13 @@ func collectMetrics(stor *storage.MemStorage) {
         "RandomValue" : storage.Gauge(rand.Float64()),
     }
 
-    stor.AddGaugeMap(mGauge)
+    stor.AddGauge(mGauge)
 
 }
 
 
 func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
-    for i, v := range stor.Gauge {
+    for i, v := range *stor.Gauge {
         var builder strings.Builder
         builder.WriteString("/update/gauge/")
         builder.WriteString(i)

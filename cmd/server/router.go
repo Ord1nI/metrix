@@ -46,7 +46,7 @@ func CreateRouter(stor *storage.MemStorage) *chi.Mux{
 
     r.Use(logger.HandlerLogging(sugar))
 
-    r.Method(http.MethodGet, "/", handlers.GetAllMetrics(stor))                  //POST localhost:/
+    r.Method(http.MethodGet, "/", handlers.MainPage(stor))                  //POST localhost:/
 
     r.Route("/update", func(r chi.Router) {
         r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/

@@ -76,7 +76,7 @@ func main() {
     getConf()
 
     
-    stor := storage.NewEmptyStorage()
+    stor := storage.NewMemStorage()
 
     client := resty.New().SetBaseURL("http://" + envVars.Address)
     StartClient(client, stor)
