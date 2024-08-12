@@ -49,7 +49,7 @@ func CreateRouter(stor *storage.MemStorage) *chi.Mux{
     r.Method(http.MethodGet, "/", handlers.MainPage(stor))                  //POST localhost:/
 
     r.Route("/update", func(r chi.Router) {
-        r.Method(http.MethodPut, "/", handlers.UpdateJSON(stor))
+        r.Method(http.MethodPost, "/", handlers.UpdateJSON(stor))
 
         r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
 

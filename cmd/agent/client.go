@@ -93,7 +93,7 @@ func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
         res, err := client.R().
                         SetHeader("Content-Type", "application/json").
                         SetBody(data).
-                        Put("/update")
+                        Put("/update/")
 
         if err != nil {
             return err
