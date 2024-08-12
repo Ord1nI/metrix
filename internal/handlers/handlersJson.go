@@ -5,7 +5,6 @@ import (
     "github.com/Ord1nI/metrix/internal/myjson"
 
     "io"
-    "fmt"
     "net/http"
     "encoding/json"
 )
@@ -27,12 +26,12 @@ func UpdateJSON(s storage.MetricGetAdder) http.Handler{
         }
 
         var metric myjson.Metric
+
         err = json.Unmarshal(data, &metric)
 
-        fmt.Println(metric)
 
         if err != nil {
-            res.WriteHeader(http.StatusBadRequest)
+            res.WriteHeader(http.StatusAccepted)
             res.Write([]byte("Cant unmarshal json\n"))
         }
 
