@@ -43,8 +43,8 @@ func UpdateJSON(s storage.MetricGetAdder) http.Handler{
         resMetric, _ := json.Marshal(ptrMetric) //maybe can be error
 
         res.WriteHeader(http.StatusOK)
+        res.Header().Add("Content-Type", "application/json" )
         res.Write(resMetric)
-
     }
 
     return http.HandlerFunc(fHandler)
@@ -52,6 +52,7 @@ func UpdateJSON(s storage.MetricGetAdder) http.Handler{
 
 func GetJSON(s storage.MetricGetAdder) http.Handler {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
+
         if req.Header.Get("Content-Type") != "application/json" {
             res.WriteHeader(http.StatusBadRequest)
             res.Write([]byte("not json request\n"))
@@ -83,6 +84,7 @@ func GetJSON(s storage.MetricGetAdder) http.Handler {
         resMetric, _ := json.Marshal(ptrMetric) //maybe can be error
 
         res.WriteHeader(http.StatusOK)
+        res.Header().Add("Content-Type", "application/json" )
         res.Write(resMetric)
     }
     return http.HandlerFunc(fHandler)
