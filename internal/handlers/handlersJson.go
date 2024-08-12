@@ -80,7 +80,7 @@ func GetJSON(s storage.MetricGetAdder) http.Handler {
             res.Write([]byte("No metric with this name"))
         }
 
-        resMetric, _ := json.Marshal(ptrMetric) //maybe can be error
+        resMetric, _ := json.Marshal(&ptrMetric) //maybe can be error
 
         res.Header().Add("Content-Type", "application/json" )
         res.WriteHeader(http.StatusOK)

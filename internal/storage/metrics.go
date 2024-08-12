@@ -36,7 +36,7 @@ func (mG *MGauge) Add(name string, val Gauge) {
 }
 
 func (mC *MCounter) Add(name string, val Counter) {
-    (*mC)[name]+=val
+    (*mC)[name] += val
 }
 
 func(mC *MCounter) ToMetrics() ([]myjson.Metric){
