@@ -1,23 +1,26 @@
 package main
 
 import (
-    "github.com/go-resty/resty/v2"
+	"github.com/go-resty/resty/v2"
 
-    "github.com/Ord1nI/metrix/internal/storage"
-    "runtime"
-    "strconv"
-    "math/rand"
-    "strings"
-    "errors"
-    "time"
-    "net/http"
+	"github.com/Ord1nI/metrix/internal/myjson"
+	"github.com/Ord1nI/metrix/internal/storage"
+
+	"encoding/json"
+	"errors"
+	"math/rand"
+	"net/http"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
 )
 
 
 func collectMetrics(stor *storage.MemStorage) {
     var mS runtime.MemStats
     runtime.ReadMemStats(&mS)
-    mGauge  := map[string]storage.Gauge{
+    mGauge  := storage.MGauge{
         "Alloc" : storage.Gauge(mS.Alloc),
         "BuckHashSys" : storage.Gauge(mS.BuckHashSys),
         "Frees" : storage.Gauge(mS.Frees),
@@ -62,7 +65,7 @@ func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
         builder.WriteString(strconv.FormatFloat(float64(v), 'f', -1, 64))
 
         res, err := client.R().
-            ExpectContentType("text/plain").
+            SetHeader("Content-Type","text/plain").
             Post(builder.String())
         
         if err != nil {
@@ -75,6 +78,35 @@ func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
     }
     return nil
 }
+
+func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
+    metrics := stor.ToMetrics()
+    delta := int64(1)
+    metrics = append(metrics, myjson.Metric{ID:"PullCount",MType: "counter", Delta: &delta})
+
+    for _, m := range metrics {
+        data, err := json.Marshal(m)
+
+        if err != nil {
+            return errors.New("marshal error")
+        }
+        res, err := client.R().
+                        SetHeader("Content-Type", "application/json").
+                        SetBody(data).
+                        Put("/update")
+
+        if err != nil {
+            return err
+        }
+        
+        if res.StatusCode() != http.StatusOK {
+            return errors.New("doesnt sent")
+        }
+    }
+
+    return nil
+}
+
 func StartClient(client *resty.Client, stor *storage.MemStorage) {
     for {
         for i := int64(0); i < envVars.ReportInterval / envVars.PollInterval; i++ {
@@ -82,22 +114,12 @@ func StartClient(client *resty.Client, stor *storage.MemStorage) {
             time.Sleep(time.Second * time.Duration(envVars.PollInterval))
         }
 
-        err := SendGaugeMetrics(client, stor)
+        err := SendMetricsJSON(client, stor)
 
         if err != nil {
             sugar.Infoln(err)
         } else {
-            sugar.Infoln("Gauge metrics sent")
-        }
-
-        res, err := client.R().
-            ExpectContentType("text/plain").
-            Post("/update/counter/PollCount/1")
-
-        if err != nil || res.StatusCode() != http.StatusOK{
-            sugar.Infoln("Counter metrics wasnt't sended")
-        } else {
-            sugar.Infoln("Counter metrics sented")
+            sugar.Infoln("Metric wasn sent")
         }
     }    
 }

@@ -2,78 +2,72 @@ package storage
 
 import(
     "encoding/json"
+    "github.com/Ord1nI/metrix/internal/myjson"
 )
 
 type Gauge float64
 type Counter int64
 
-type mGauge map[string]Gauge
-type mCounter map[string]Counter
+type MGauge map[string]Gauge
+type MCounter map[string]Counter
 
-type jMetric struct {
-    ID string `json:"id"`
-    Mtype string  `json:"type"`
-    Delta *int64 `json:"delta,omitempty"`
-    Value *float64 `json:"value,omitempty"`
-}
-
-func NewGaugeM() *mGauge{
-    m := make(mGauge)
+func NewGaugeM() *MGauge{
+    m := make(MGauge)
     return &m
 }
 
-func NewCounterM() *mCounter{
-    m := make(mCounter)
+func NewCounterM() *MCounter{
+    m := make(MCounter)
     return &m
 }
 
-func (mG *mGauge) Get(name string) (Gauge, bool) {
+func (mG *MGauge) Get(name string) (Gauge, bool) {
     v, ok := (*mG)[name]
     return v, ok
 }
 
-func (mC *mCounter) Get(name string) (Counter, bool) {
+func (mC *MCounter) Get(name string) (Counter, bool) {
     v, ok := (*mC)[name]
     return v, ok
 }
 
-func (mG *mGauge) Add(name string, val Gauge) {
+func (mG *MGauge) Add(name string, val Gauge) {
     (*mG)[name] = val
 }
 
-func (mC *mCounter) Add(name string, val Counter) {
+func (mC *MCounter) Add(name string, val Counter) {
     (*mC)[name]+=val
 }
 
-func(mC *mCounter) tojMetrics() ([]jMetric){
-    jm := make([]jMetric,0,len(*mC))
+func(mC *MCounter) ToMetrics() ([]myjson.Metric){
+    jm := make([]myjson.Metric,0,len(*mC))
 
     for i, v := range (*mC) {
         fV := int64(v)
-        jm = append(jm, jMetric{ID:i,Mtype:"counter",Delta:&fV})
+        jm = append(jm, myjson.Metric{ID:i,MType:"counter",Delta:&fV})
     }
     return jm
 }
 
-func(mG *mGauge) tojMetrics() ([]jMetric) {
-    jm := make([]jMetric,0,len(*mG))
+func(mG *MGauge) ToMetrics() ([]myjson.Metric) {
+    jm := make([]myjson.Metric,0,len(*mG))
 
     for i, v := range (*mG) {
         fV := float64(v)
-        jm = append(jm, jMetric{ID:i,Mtype:"gauge",Value:&fV})
+        jm = append(jm, myjson.Metric{ID:i,MType:"gauge",Value:&fV})
     }
     return jm
 }
 
-func (mG *mGauge) MarshalJSON() ([]byte, error){
-    jm := mG.tojMetrics()
+func (mG *MGauge) MarshalJSON() ([]byte, error){
+    jm := mG.ToMetrics()
 
     r, err := json.Marshal(jm)
     return r, err
 }
 
-func (mC *mCounter) MarshalJSON() ([]byte, error){
-    jm := mC.tojMetrics()
+func (mC *MCounter) MarshalJSON() ([]byte, error){
+    jm := mC.ToMetrics()
 
     r, err := json.Marshal(jm)
     return r, err

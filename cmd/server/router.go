@@ -49,8 +49,9 @@ func CreateRouter(stor *storage.MemStorage) *chi.Mux{
     r.Method(http.MethodGet, "/", handlers.MainPage(stor))                  //POST localhost:/
 
     r.Route("/update", func(r chi.Router) {
-        r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
+        r.Method(http.MethodPut, "/", handlers.UpdateJSON(stor))
 
+        r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
 
         r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
 
@@ -59,6 +60,8 @@ func CreateRouter(stor *storage.MemStorage) *chi.Mux{
     })
 
     r.Route("/value", func(r chi.Router) {
+        r.Method(http.MethodGet, "/", handlers.GetJSON(stor))
+
         r.HandleFunc("/*", handlers.BadRequest)            // Any /value/
 
         r.Route("/gauge", valueGaugeRoute(stor))        

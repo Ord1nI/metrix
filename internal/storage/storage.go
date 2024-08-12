@@ -4,10 +4,24 @@ import (
     "errors"
     "reflect"
     "encoding/json"
+    "github.com/Ord1nI/metrix/internal/myjson"
 )
 
 type Adder interface {
     Add(name string, val interface{}) (error)
+}
+
+type MetricAdder interface {
+    AddMetric(myjson.Metric)
+}
+type MetricGetter interface {
+    GetMetric(string, string) (*myjson.Metric, bool)
+}
+
+
+type MetricGetAdder interface {
+    MetricAdder
+    MetricGetter
 }
 
 type Getter  interface {
@@ -20,8 +34,8 @@ type GetAdder interface {
 }
 
 type MemStorage struct{
-    Gauge *mGauge
-    Counter *mCounter
+    Gauge *MGauge
+    Counter *MCounter
 }
 
 func NewMemStorage() *MemStorage{
@@ -41,6 +55,50 @@ func (m *MemStorage) Add(name string, val interface{}) error {
         return nil
     }
     return errors.New("incorect metric type")
+}
+
+func (m *MemStorage)AddMetric(metric myjson.Metric) {
+    switch metric.MType {
+    case "gauge":
+        m.Gauge.Add(metric.ID, Gauge(*metric.Value))
+    case "counter":
+        m.Counter.Add(metric.ID, Counter(*metric.Delta))
+    }
+}
+
+func (m *MemStorage)GetMetric(name, mType string) (*myjson.Metric, bool){
+    switch mType {
+    case "gauge":
+        val, ok := m.Gauge.Get(name)
+        fval := float64(val)
+
+        if !ok {
+            return nil, false
+        }
+
+        mj := myjson.Metric{
+            ID:name,
+            MType:mType,
+            Value:&fval,
+        }
+        return &mj, true
+
+    case "counter":
+        val, ok := m.Counter.Get(name)
+        ival := int64(val)
+
+        if !ok {
+            return nil, false
+        }
+
+        mj := myjson.Metric{
+            ID:name,
+            MType:mType,
+            Delta:&ival,
+        }
+        return &mj, true
+    }
+    return nil, false
 }
 
 func (m *MemStorage) Get(name string, val interface{}) error{
@@ -72,8 +130,8 @@ func (m *MemStorage) Get(name string, val interface{}) error{
 }
 
 func (m *MemStorage) MarshalJSON() ([]byte, error){
-    jm := m.Gauge.tojMetrics()
-    jm = append(jm, m.Counter.tojMetrics()...)
+    jm := m.Gauge.ToMetrics()
+    jm = append(jm, m.Counter.ToMetrics()...)
 
     r, err := json.Marshal(jm)
     if err != nil {
@@ -83,10 +141,16 @@ func (m *MemStorage) MarshalJSON() ([]byte, error){
     return r, nil
 }
 
-func (m *MemStorage) AddGauge(g mGauge) {
+func (m *MemStorage) ToMetrics() ([]myjson.Metric){
+    jm := m.Gauge.ToMetrics()
+    jm = append(jm, m.Counter.ToMetrics()...)
+    return jm
+}
+
+func (m *MemStorage) AddGauge(g MGauge) {
     m.Gauge = &g
 }
 
-func (m *MemStorage) AddCounter(c mCounter) {
+func (m *MemStorage) AddCounter(c MCounter) {
     m.Counter = &c
 }

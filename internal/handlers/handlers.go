@@ -18,7 +18,6 @@ import (
 
 func UpdateGauge(s storage.Adder) http.Handler {
     fHandler := func(res http.ResponseWriter, req *http.Request) {
-        
         name := chi.URLParam(req, "name")
         v := chi.URLParam(req, "val")
 
@@ -141,6 +140,7 @@ func MainPage(m json.Marshaler) http.Handler {
 
     return http.HandlerFunc(fHandler)
 }
+
 
 
 func NotFound(res http.ResponseWriter, req *http.Request) {
