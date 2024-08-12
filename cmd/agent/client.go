@@ -6,7 +6,6 @@ import (
 	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"
 
-    "fmt"
 	"encoding/json"
 	"errors"
 	"math/rand"
