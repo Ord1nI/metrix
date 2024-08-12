@@ -90,10 +90,26 @@ func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
         if err != nil {
             return errors.New("marshal error")
         }
-        res, err := client.R().
-                        SetHeader("Content-Type", "application/json").
-                        SetBody(data).
-                        Post("/update/")
+        backoffSchedule := []time.Duration{
+          100 * time.Millisecond,
+          500 * time.Millisecond,
+          1 * time.Second,
+        }
+
+        var res *resty.Response
+        for _, backoff := range backoffSchedule {
+
+            res, err = client.R().
+                            SetHeader("Content-Type", "application/json").
+                            SetBody(data).
+                            Post("/update/")
+
+            if err == nil && res.StatusCode() == http.StatusOK{
+                break
+            }
+
+            time.Sleep(backoff)
+        }
 
         if err != nil {
             return err
@@ -113,20 +129,12 @@ func StartClient(client *resty.Client, stor *storage.MemStorage) {
             collectMetrics(stor)
             time.Sleep(time.Second * time.Duration(envVars.PollInterval))
         }
-        backoffSchedule := []time.Duration{
-          100 * time.Millisecond,
-          500 * time.Millisecond,
-          1 * time.Second,
-        }
+        err := SendMetricsJSON(client, stor)
 
-        for _, backoff := range backoffSchedule {
-          err := SendMetricsJSON(client, stor)
-          if err == nil {
-              break
-          } else {
-              sugar.Infoln(err)
-          }
-          time.Sleep(backoff)
+        if err != nil {
+            sugar.Infoln(err)
+        } else {
+            sugar.Infoln("Metric wasn sent")
         }
     }    
 }
