@@ -54,7 +54,7 @@ func (m *MemStorage) Get(name string, val interface{}) error{
                     v.SetFloat(float64(val))
                     return nil
                 } else {
-                    return errors.New("No variable by this name")
+                    return errors.New("no variable by this name")
                 }
             case "Counter":
                 val, ok := m.Counter.Get(name)
@@ -62,13 +62,13 @@ func (m *MemStorage) Get(name string, val interface{}) error{
                     v.SetInt(int64(val))
                     return nil
                 } else {
-                    return errors.New("No variable by this name")
+                    return errors.New("no variable by this name")
                 }
             default:
                 return errors.New("incorect val type")
         }
     }
-    return errors.New("Incorect val")
+    return errors.New("incorect val")
 }
 
 func (m *MemStorage) MarshalJSON() ([]byte, error){
