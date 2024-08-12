@@ -6,6 +6,7 @@ import (
 	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"
 
+    "fmt"
 	"encoding/json"
 	"errors"
 	"math/rand"
@@ -122,6 +123,7 @@ func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
 
     return nil
 }
+
 
 func StartClient(client *resty.Client, stor *storage.MemStorage) {
     for {
