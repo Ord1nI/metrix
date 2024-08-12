@@ -82,7 +82,7 @@ func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
 func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
     metrics := stor.ToMetrics()
     delta := int64(1)
-    metrics = append(metrics, myjson.Metric{ID:"PullCount",MType: "counter", Delta: &delta})
+    metrics = append(metrics, myjson.Metric{ID:"PollCount",MType: "counter", Delta: &delta})
 
     for _, m := range metrics {
         data, err := json.Marshal(m)
@@ -135,7 +135,7 @@ func StartClient(client *resty.Client, stor *storage.MemStorage) {
         if err != nil {
             sugar.Infoln(err)
         } else {
-            sugar.Infoln("Metric wasn sent")
+            sugar.Infoln("Metrics sent")
         }
     }    
 }
