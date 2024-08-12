@@ -32,12 +32,12 @@ func NewMemStorage() *MemStorage{
 }
 
 func (m *MemStorage) Add(name string, val interface{}) error {
-    switch val.(type) {
+    switch val := val.(type) {
     case Gauge:
-        m.Gauge.Add(name, val.(Gauge))
+        m.Gauge.Add(name, val)
         return nil
     case Counter:
-        m.Counter.Add(name, val.(Counter))
+        m.Counter.Add(name, val)
         return nil
     }
     return errors.New("incorect metric type")
