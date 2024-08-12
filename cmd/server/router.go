@@ -60,7 +60,7 @@ func CreateRouter(stor *storage.MemStorage) *chi.Mux{
     })
 
     r.Route("/value", func(r chi.Router) {
-        r.Method(http.MethodGet, "/", handlers.GetJSON(stor))
+        r.Method(http.MethodPost, "/", handlers.GetJSON(stor))
 
         r.HandleFunc("/*", handlers.BadRequest)            // Any /value/
 
