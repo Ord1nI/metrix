@@ -98,7 +98,8 @@ func GzipMiddleware(h http.Handler) http.Handler{
 
         if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && 
             (strings.Contains(r.Header.Get("Accept"), "application/json") ||
-                strings.Contains(r.Header.Get("Accept"), "text/html")) {
+                strings.Contains(r.Header.Get("Accept"), "text/html") ||
+                    strings.Contains(r.Header.Get("Accept"), "html/text")) { 
 
             gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 
