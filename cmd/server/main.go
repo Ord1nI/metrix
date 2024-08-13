@@ -69,7 +69,7 @@ func StartDataSaver(s *storage.MemStorage) {
         err := s.WriteToFile(envVars.FileStoragePath)
         if err != nil {
             sugar.Fatal(err)
-        } esle {
+        } else {
             sugar.Info("Data saved")
         }
     }
