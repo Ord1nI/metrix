@@ -58,13 +58,13 @@ func getConf() {
     if envVars.FileStoragePath == "" {
         envVars.FileStoragePath = *fFileStoragePath
     }
-    if envVars.Restore == true {
+    if envVars.Restore {
         envVars.Restore = *fRestore
     }
 }
 
 func StartDataSaver(s *storage.MemStorage) {
-    for true {
+    for {
         time.Sleep(time.Duration(envVars.StoreInterval) * time.Second)
         err := s.WriteToFile(envVars.FileStoragePath)
         if err != nil {
@@ -85,7 +85,7 @@ func main() {
 
     stor := storage.NewMemStorage()
 
-    if envVars.FileStoragePath != "" && envVars.Restore == true {
+    if envVars.FileStoragePath != "" && envVars.Restore {
         err := stor.GetFromFile(envVars.FileStoragePath)
         if err != nil {
             sugar.Info(err)
