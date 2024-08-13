@@ -134,6 +134,8 @@ func MainPage(m json.Marshaler) http.Handler {
         html.WriteString(`</html>
                           </body>`)
 
+
+        res.Header().Add("Content-Type", "text/html")
         res.WriteHeader(http.StatusOK)
         res.Write(html.Bytes())
     }
