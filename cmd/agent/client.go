@@ -5,6 +5,7 @@ import (
 
 	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"
+	"github.com/Ord1nI/metrix/internal/compressor"
 
 	"encoding/json"
 	"errors"
@@ -86,10 +87,16 @@ func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
 
     for _, m := range metrics {
         data, err := json.Marshal(m)
+        if err != nil {
+            return err
+        }
+
+        data, err = compressor.ToGzip(data)
 
         if err != nil {
-            return errors.New("marshal error")
+            return err
         }
+
         backoffSchedule := []time.Duration{
           100 * time.Millisecond,
           500 * time.Millisecond,
@@ -101,6 +108,8 @@ func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
 
             res, err = client.R().
                             SetHeader("Content-Type", "application/json").
+                            SetHeader("Content-Encoding", "gzip").
+                            SetHeader("Accept-Encoding", "gzip").
                             SetBody(data).
                             Post("/update/")
 

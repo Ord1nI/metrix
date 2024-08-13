@@ -7,6 +7,7 @@ import (
     "github.com/Ord1nI/metrix/internal/storage"
     "github.com/Ord1nI/metrix/internal/handlers"
     "github.com/Ord1nI/metrix/internal/logger"
+    "github.com/Ord1nI/metrix/internal/compressor"
 )
 
 
@@ -44,7 +45,7 @@ func CreateRouter(stor *storage.MemStorage) *chi.Mux{
 
     r := chi.NewRouter()
 
-    r.Use(logger.HandlerLogging(sugar))
+    r.Use(logger.HandlerLogging(sugar), compressor.GzipMiddleware)
 
     r.Method(http.MethodGet, "/", handlers.MainPage(stor))                  //POST localhost:/
 
