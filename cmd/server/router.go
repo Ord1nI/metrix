@@ -47,6 +47,10 @@ func CreateRouter(stor *storage.MemStorage) *chi.Mux{
 
     r.Use(logger.HandlerLogging(sugar), compressor.GzipMiddleware)
 
+    if envVars.StoreInterval == 0 {
+        r.Use(storage.SaveToFileMW(envVars.FileStoragePath, stor))
+    }
+
     r.Method(http.MethodGet, "/", handlers.MainPage(stor))                  //POST localhost:/
 
     r.Route("/update", func(r chi.Router) {

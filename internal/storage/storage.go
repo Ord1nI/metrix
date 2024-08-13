@@ -5,6 +5,7 @@ import (
     "reflect"
     "encoding/json"
     "github.com/Ord1nI/metrix/internal/myjson"
+    "os"
 )
 
 type Adder interface {
@@ -141,6 +142,22 @@ func (m *MemStorage) MarshalJSON() ([]byte, error){
     return r, nil
 }
 
+func (m *MemStorage) UnmarshalJSON(d []byte) error {
+    var metrics []myjson.Metric
+
+    err := json.Unmarshal(d, &metrics)
+
+    if err != nil {
+        return err
+    }
+
+    for _, v := range metrics {
+        m.AddMetric(v)
+    }
+
+    return nil
+}
+
 func (m *MemStorage) ToMetrics() ([]myjson.Metric){
     jm := m.Gauge.ToMetrics()
     jm = append(jm, m.Counter.ToMetrics()...)
@@ -153,4 +170,31 @@ func (m *MemStorage) AddGauge(g MGauge) {
 
 func (m *MemStorage) AddCounter(c MCounter) {
     m.Counter = &c
+}
+
+func (m *MemStorage) WriteToFile(f string) error {
+    json, err := m.MarshalJSON()
+
+    if err != nil {
+        return err
+     }
+
+     err = os.WriteFile(f, json, 0666)
+     return err
+}
+
+func (m *MemStorage) GetFromFile(f string) (error) {
+    buf, err := os.ReadFile(f)
+
+    if err != nil {
+        return err
+    }
+
+    err = m.UnmarshalJSON(buf)
+
+    if err != nil {
+        return err
+    }
+
+    return nil
 }
