@@ -36,7 +36,7 @@ func ptrInt(d int64) *int64{
     return &d
 }
 
-func tUpdateJson(t *testing.T, serv *httptest.Server, client *http.Client) {
+func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
     type want struct {
         code int
         res string
@@ -154,7 +154,7 @@ func tUpdateJson(t *testing.T, serv *httptest.Server, client *http.Client) {
     }
 
 }
-func tGetJson(t *testing.T, serv *httptest.Server, client *http.Client) {
+func tGetJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
     type want struct {
         code int
         res string
