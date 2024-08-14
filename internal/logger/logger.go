@@ -4,8 +4,8 @@ import  (
     "go.uber.org/zap"
 
     "net/http"
-    "time"
 )
+
 func NewLogger() (*zap.Logger, error){
     logger, err := zap.NewDevelopment()
     return logger, err
@@ -48,25 +48,3 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
     r.responseData.status = statusCode
 }
 
-func HandlerLogging(logger *zap.SugaredLogger) func(http.Handler) http.Handler{
-    return func(h http.Handler) http.Handler{
-        logFn := func(w http.ResponseWriter, r *http.Request) {
-            start := time.Now()
-
-            lw := newLoggingResponseWriter(w)
-
-            h.ServeHTTP(lw, r)
-
-            duration := time.Since(start)
-
-            logger.Infoln(
-                "uri", r.RequestURI,
-                "method", r.Method,
-                "status", lw.responseData.status,
-                "duration", duration,
-                "size", lw.responseData.size,
-            )
-        }
-        return http.HandlerFunc(logFn)
-    }
-}

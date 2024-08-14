@@ -1,21 +1,24 @@
 package main
 
 import (
-    "github.com/caarlos0/env/v11"
-    "go.uber.org/zap"
+	"github.com/caarlos0/env/v11"
+	"go.uber.org/zap"
+    "github.com/go-chi/chi/v5"
 
-    "flag"
-    "time"
-    "net/http"
-    "github.com/Ord1nI/metrix/internal/storage"
-    "github.com/Ord1nI/metrix/internal/logger"
+	"flag"
+	"net/http"
+	"time"
+
+	"github.com/Ord1nI/metrix/internal/compressor"
+	"github.com/Ord1nI/metrix/internal/logger"
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
 type Config struct {
     Address string `env:"ADDRESS" envDefault:"localhost:8080"` //envvar $ADDRESS or envDefault
-    StoreInterval int `env:"STORE_INTERVAL" envDefault:"300"`
-    FileStoragePath string `env:"FILE_STORAGE_PATH"`
-    Restore bool `env:"RESTORE" envDefault:"true"`
+    StoreInterval int `env:"STORE_INTERVAL" envDefault:"300"`  //envvar $STORE_INTERVAL or envDefault
+    FileStoragePath string `env:"FILE_STORAGE_PATH"`           //envvar $FILE_STORAGE or envDefault
+    Restore bool `env:"RESTORE" envDefault:"true"`             //envvar $RESTORE or envDefault
 } 
 
 var envVars Config
@@ -74,14 +77,21 @@ func StartDataSaver(s *storage.MemStorage) {
         }
     }
 }
-
-func main() {
+func initF() {
     log, err := initLogger()
     if err != nil {
         panic(err)
+    } else {
+        sugar.Info("Logger successfully inited")
     }
     defer log.Sync()
     getConf()
+    sugar.Info("Config vars: ", envVars)
+}
+
+func main() {
+
+    initF()
 
     stor := storage.NewMemStorage()
 
@@ -94,11 +104,21 @@ func main() {
         }
     }
 
-    r := CreateRouter(stor)
+    var r chi.Router
+
+    if envVars.StoreInterval == 0 {
+        r = CreateRouter(stor,
+            logger.HandlerLogging(sugar), 
+            compressor.GzipMiddleware, 
+            storage.SaveToFileMW(envVars.FileStoragePath,stor))
+    } else {
+        r = CreateRouter(stor, 
+            logger.HandlerLogging(sugar), 
+            compressor.GzipMiddleware)
+    }
 
     if  envVars.FileStoragePath != "" && 
         envVars.StoreInterval != 0 {
-
             go StartDataSaver(stor)
     }
 

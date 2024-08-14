@@ -12,8 +12,12 @@ type Adder interface {
     Add(name string, val interface{}) (error)
 }
 
+type Getter  interface {
+    Get(name string, val interface{}) (error)
+}
+
 type MetricAdder interface {
-    AddMetric(myjson.Metric)
+    AddMetric(myjson.Metric) error
 }
 type MetricGetter interface {
     GetMetric(string, string) (*myjson.Metric, bool)
@@ -23,10 +27,6 @@ type MetricGetter interface {
 type MetricGetAdder interface {
     MetricAdder
     MetricGetter
-}
-
-type Getter  interface {
-    Get(name string, val interface{}) (error)
 }
 
 type GetAdder interface {
@@ -58,13 +58,19 @@ func (m *MemStorage) Add(name string, val interface{}) error {
     return errors.New("incorect metric type")
 }
 
-func (m *MemStorage)AddMetric(metric myjson.Metric) {
+func (m *MemStorage)AddMetric(metric myjson.Metric) error{
+    if metric.ID == "" {
+        return errors.New("metric must hame name")
+    }
     switch metric.MType {
     case "gauge":
         m.Gauge.Add(metric.ID, Gauge(*metric.Value))
+        return nil
     case "counter":
         m.Counter.Add(metric.ID, Counter(*metric.Delta))
+        return nil
     }
+    return errors.New("Bad Type")
 }
 
 func (m *MemStorage)GetMetric(name, mType string) (*myjson.Metric, bool){

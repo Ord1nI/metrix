@@ -6,71 +6,81 @@ import (
     "net/http"
     "github.com/Ord1nI/metrix/internal/storage"
     "github.com/Ord1nI/metrix/internal/handlers"
-    "github.com/Ord1nI/metrix/internal/logger"
-    "github.com/Ord1nI/metrix/internal/compressor"
 )
 
 
 func updateGaugeRoute(stor storage.Adder) func(r chi.Router){
     return func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound) // ANY /update/gauge/
-        r.Method(http.MethodPost, "/{name}/{val}", handlers.UpdateGauge(stor))     // POST /update/gauge/name/123
-        r.HandleFunc("/{name}/{val}/*", handlers.BadRequest)    // ANY /update/gauge/name/123/adsf
+        // ANY /update/gauge/
+        r.HandleFunc("/", handlers.NotFound) 
+        // POST /update/gauge/name/123
+        r.Method(http.MethodPost, "/{name}/{val}", handlers.UpdateGauge(stor))             
+        // ANY /update/gauge/name/123/adsf
+        r.HandleFunc("/{name}/{val}/*", handlers.BadRequest)    
     }
 }
 
 func updateCounterRoute(stor storage.Adder) func(r chi.Router){
     return func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)                    // ANY /update/gauge/
-        r.Method(http.MethodPost, "/{name}/{val}", handlers.UpdateCounter(stor))     // POST /update/gauge/name/123
-        r.HandleFunc("/{name}/{val}/*", handlers.BadRequest)  // ANY /update/gauge/name/123/adsf
+        // ANY /update/gauge/
+        r.HandleFunc("/", handlers.NotFound)                    
+        // POST /update/gauge/name/123
+        r.Method(http.MethodPost, "/{name}/{val}", handlers.UpdateCounter(stor))     
+        // ANY /update/gauge/name/123/adsf
+        r.HandleFunc("/{name}/{val}/*", handlers.BadRequest)  
     }
 }
 func valueGaugeRoute(stor storage.Getter) func(r chi.Router){
     return func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)  //ANY /value/gauge/
-        r.Method(http.MethodGet, "/{name}", handlers.GetGauge(stor))           //GET /value/gauge/name
-        r.HandleFunc("/{name}/*", handlers.BadRequest)      //ANY /value/gauge/name/asa
+        //ANY /value/gauge/
+        r.HandleFunc("/", handlers.NotFound)  
+        //GET /value/gauge/name
+        r.Method(http.MethodGet, "/{name}", handlers.GetGauge(stor))           
+        //ANY /value/gauge/name/asa
+        r.HandleFunc("/{name}/*", handlers.BadRequest)      
     }
 }
 func valueCounterRoute(stor storage.Getter) func(r chi.Router){
     return func(r chi.Router) {
-        r.HandleFunc("/", handlers.NotFound)                   //ANY /value/counter/
-        r.Method(http.MethodGet,"/{name}", handlers.GetCounter(stor))         //GET /value/counter/name
-        r.HandleFunc("/{name}/*", handlers.BadRequest)      //ANY /value/counter/name/qew
+        //ANY /value/counter/
+        r.HandleFunc("/", handlers.NotFound)                   
+        //GET /value/counter/name
+        r.Method(http.MethodGet,"/{name}", handlers.GetCounter(stor))         
+        //ANY /value/counter/name/qew
+        r.HandleFunc("/{name}/*", handlers.BadRequest)      
     }
 }
 
-func CreateRouter(stor *storage.MemStorage) *chi.Mux{
+func CreateRouter(stor *storage.MemStorage, middlewares ...func(http.Handler)http.Handler) *chi.Mux{
 
     r := chi.NewRouter()
 
-    r.Use(logger.HandlerLogging(sugar), compressor.GzipMiddleware)
-
-    if envVars.StoreInterval == 0 {
-        r.Use(storage.SaveToFileMW(envVars.FileStoragePath, stor))
+    for _, i := range middlewares {
+        r.Use(i)
     }
 
-    r.Method(http.MethodGet, "/", handlers.MainPage(stor))                  //POST localhost:/
+
+    // GET /
+    r.Method(http.MethodGet, "/", handlers.MainPage(stor))                  
 
     r.Route("/update", func(r chi.Router) {
         r.Method(http.MethodPost, "/", handlers.UpdateJSON(stor))
-
-        r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
-
-        r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
-
-        r.Route("/counter", updateCounterRoute(stor))     // Any /update/counter/*
+        // ANY /update/
+        r.HandleFunc("/*", handlers.BadRequest)                      
+        // ANY /update/gauge/*
+        r.Route("/gauge", updateGaugeRoute(stor))
+        // Any /update/counter/*
+        r.Route("/counter", updateCounterRoute(stor))     
         
     })
 
     r.Route("/value", func(r chi.Router) {
         r.Method(http.MethodPost, "/", handlers.GetJSON(stor))
-
-        r.HandleFunc("/*", handlers.BadRequest)            // Any /value/
-
+        // Any /value/
+        r.HandleFunc("/*", handlers.BadRequest)
+        // ANY /value/gauge/*
         r.Route("/gauge", valueGaugeRoute(stor))        
-
+        // ANY /value/counter/*
         r.Route("/counter", valueCounterRoute(stor))   
     })
 
