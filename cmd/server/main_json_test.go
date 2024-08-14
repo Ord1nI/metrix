@@ -86,7 +86,7 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
             },
             want: want{
                 code: http.StatusBadRequest,
-                res: "Bad Type",
+                res: "bad type",
             },
         },
         {

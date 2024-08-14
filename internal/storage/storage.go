@@ -70,7 +70,7 @@ func (m *MemStorage)AddMetric(metric myjson.Metric) error{
         m.Counter.Add(metric.ID, Counter(*metric.Delta))
         return nil
     }
-    return errors.New("bad Type")
+    return errors.New("bad type")
 }
 
 func (m *MemStorage)GetMetric(name, mType string) (*myjson.Metric, bool){
