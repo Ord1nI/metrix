@@ -25,8 +25,8 @@ func Test(t *testing.T) {
     serv := httptest.NewServer(r)
     client := serv.Client()
 
-    tUpdateJson(t,serv, client)
-    tGetJson(t, serv, client)
+    tUpdateJSON(t,serv, client)
+    tGetJSON(t, serv, client)
 }
 
 func ptrFloat(d float64) *float64{
