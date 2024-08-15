@@ -1,18 +1,19 @@
-package handlers 
+package handlers
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-    "github.com/go-chi/chi/v5"
 
-    "bytes"
-    "encoding/json"
-    "github.com/Ord1nI/metrix/internal/myjson"
-    "io"
-    "testing"
-    "errors"
-    "net/http"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
 	"net/http/httptest"
+	"testing"
+
+	"github.com/Ord1nI/metrix/internal/myjson"
 )
 
 func (s *storageMock) AddMetric(m myjson.Metric) error{

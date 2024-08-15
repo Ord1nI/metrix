@@ -1,17 +1,16 @@
 package main
 
 import (
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
-    "bytes"
 	"net/http/httptest"
-    "encoding/json"
+	"reflect"
 	"testing"
-    "reflect"
 
 	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"

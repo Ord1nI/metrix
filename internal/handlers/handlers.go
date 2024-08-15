@@ -1,18 +1,18 @@
 package handlers
 
-
 import (
-    "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 
-    "slices"
-    "cmp"
-    "bytes"
-    "net/http"
-    "strconv"
-    "io"
-    "github.com/Ord1nI/metrix/internal/storage"
-    "github.com/Ord1nI/metrix/internal/myjson"
-    "encoding/json"
+	"bytes"
+	"cmp"
+	"encoding/json"
+	"io"
+	"net/http"
+	"slices"
+	"strconv"
+
+	"github.com/Ord1nI/metrix/internal/myjson"
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
 

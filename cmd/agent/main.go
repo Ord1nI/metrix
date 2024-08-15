@@ -1,13 +1,14 @@
 package main
 
-import(
-    "github.com/go-resty/resty/v2"
-    "github.com/caarlos0/env/v11"
-    "go.uber.org/zap"
+import (
+	"github.com/caarlos0/env/v11"
+	"github.com/go-resty/resty/v2"
+	"go.uber.org/zap"
 
-    "github.com/Ord1nI/metrix/internal/storage"
-    "github.com/Ord1nI/metrix/internal/logger"
-    "flag"
+	"flag"
+
+	"github.com/Ord1nI/metrix/internal/logger"
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
 type Config struct {

@@ -1,10 +1,10 @@
 package logger
 
 import (
-    "go.uber.org/zap"
+	"go.uber.org/zap"
 
-    "net/http"
-    "time"
+	"net/http"
+	"time"
 )
 
 func HandlerLogging(logger *zap.SugaredLogger) func(http.Handler) http.Handler{

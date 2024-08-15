@@ -1,13 +1,13 @@
 package handlers
 
 import (
-    "github.com/Ord1nI/metrix/internal/storage"
-    "github.com/Ord1nI/metrix/internal/myjson"
+	"github.com/Ord1nI/metrix/internal/myjson"
+	"github.com/Ord1nI/metrix/internal/storage"
 
-    "io"
-    "net/http"
-    "encoding/json"
-    "fmt"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 )
 
 func UpdateJSON(s storage.MetricGetAdder) http.Handler{

@@ -1,9 +1,9 @@
 package logger
 
-import  (
-    "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
 
-    "net/http"
+	"net/http"
 )
 
 func NewLogger() (*zap.Logger, error){

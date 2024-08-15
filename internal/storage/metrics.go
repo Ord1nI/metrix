@@ -1,8 +1,9 @@
 package storage
 
-import(
-    "encoding/json"
-    "github.com/Ord1nI/metrix/internal/myjson"
+import (
+	"encoding/json"
+
+	"github.com/Ord1nI/metrix/internal/myjson"
 )
 
 type Gauge float64

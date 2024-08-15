@@ -1,11 +1,12 @@
 package main
 
 import (
-    "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 
-    "net/http"
-    "github.com/Ord1nI/metrix/internal/storage"
-    "github.com/Ord1nI/metrix/internal/handlers"
+	"net/http"
+
+	"github.com/Ord1nI/metrix/internal/handlers"
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
 

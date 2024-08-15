@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/caarlos0/env/v11"
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
-    "github.com/go-chi/chi/v5"
 
 	"flag"
 	"net/http"

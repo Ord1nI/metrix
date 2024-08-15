@@ -1,11 +1,12 @@
 package storage
 
 import (
-    "errors"
-    "reflect"
-    "encoding/json"
-    "github.com/Ord1nI/metrix/internal/myjson"
-    "os"
+	"encoding/json"
+	"errors"
+	"os"
+	"reflect"
+
+	"github.com/Ord1nI/metrix/internal/myjson"
 )
 
 type Adder interface {

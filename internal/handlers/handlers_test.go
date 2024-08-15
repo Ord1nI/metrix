@@ -1,17 +1,18 @@
 package handlers
 
 import (
-    "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"errors"
 	"io"
-    "errors"
-    "reflect"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
-    "github.com/Ord1nI/metrix/internal/storage"
+
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
 type storageMock struct{

@@ -1,11 +1,11 @@
 package compressor
 
 import (
-    "compress/gzip"
-    "io"
-    "net/http"
-    "bytes"
-    "errors"
+	"bytes"
+	"compress/gzip"
+	"errors"
+	"io"
+	"net/http"
 )
 type gzipWriter struct {
     http.ResponseWriter

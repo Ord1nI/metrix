@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/go-resty/resty/v2"
 
+	"github.com/Ord1nI/metrix/internal/compressor"
 	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"
-	"github.com/Ord1nI/metrix/internal/compressor"
 
 	"encoding/json"
 	"errors"

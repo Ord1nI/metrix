@@ -4,11 +4,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-    "io"
-    "testing"
-    "net/http"
-    "net/http/httptest"
-    "github.com/Ord1nI/metrix/internal/storage"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
 func TestMain(t *testing.T) {

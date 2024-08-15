@@ -1,10 +1,10 @@
 package compressor
 
 import (
-    "compress/gzip"
-    "strings"
-    "fmt"
-    "net/http"
+	"compress/gzip"
+	"fmt"
+	"net/http"
+	"strings"
 )
 
 func GzipMiddleware(h http.Handler) http.Handler{
