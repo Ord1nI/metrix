@@ -1,38 +1,57 @@
 package handlers
 
 import (
-    "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
-    "errors"
-    "github.com/Ord1nI/metrix/internal/storage"
+
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
 type storageMock struct{
-    val storage.Gauge
+    val float64
     name string
+    mtype string
 }
 
-func (s *storageMock) GetGauge(name string) (storage.Gauge, error) {
-    if name == s.name {
-        return s.val, nil
+func (s *storageMock)Add(name string, val interface{}) (error) {
+    switch val := val.(type) {
+    case storage.Gauge:
+        s.val = float64(val)
+        s.mtype = "gauge"
+        return nil
+    case storage.Counter:
+        if s.mtype == "counter" {
+            s.val += float64(val)
+            return nil
+        } else {
+            s.val = float64(val)
+            s.mtype = "counter"
+        }
     }
-    return 0, errors.New("error")
+    return errors.New("incorect metric type")
 }
-func (s *storageMock) AddGauge(name string, val storage.Gauge) {
-}
-func (s *storageMock) GetCounter(name string) (storage.Counter, error) {
-    if name == s.name {
-        return storage.Counter(s.val), nil
+
+func (s *storageMock) Get(name string, val interface{}) (error) {
+    v := reflect.ValueOf(val)
+    v = v.Elem()
+    if s.name == name {
+        if v.CanFloat() {
+            v.SetFloat(s.val)
+        }
+        if v.CanInt() {
+            v.SetInt(int64(s.val))
+        }
+        return nil
     }
-    return 0, errors.New("error")
-}
-func (s *storageMock) AddCounter(name string, val storage.Counter) {
+    return errors.New("error")
 }
 
 
@@ -66,7 +85,7 @@ func TestUpdateGauge(t *testing.T) {
     }
 
     r := chi.NewRouter()
-    r.Post("/update/gauge/{name}/{val}",UpdateGauge(&storageMock{}))
+    r.Method(http.MethodPost, "/update/gauge/{name}/{val}",UpdateGauge(&storageMock{}))
 
     for _, test := range tests{
         t.Run(test.name, func(t *testing.T) {
@@ -78,7 +97,7 @@ func TestUpdateGauge(t *testing.T) {
             r.ServeHTTP(w, req)
 
             res := w.Result()
-            assert.Equal(t,test.want.code, res.StatusCode)
+            assert.Equal(t, test.want.code, res.StatusCode)
 
             resBody, err := io.ReadAll(res.Body)
 
@@ -92,6 +111,7 @@ func TestUpdateGauge(t *testing.T) {
 func TestUpdateCounter(t *testing.T) {
     type want struct {
         code int
+        val int64
         response string
     }
     tests := []struct{
@@ -112,12 +132,23 @@ func TestUpdateCounter(t *testing.T) {
             reqURL: "http://fuckintsite.com/update/counter/name/111",
             want: want{
                 code: http.StatusOK,
+                val:111,
+                response: "",
+            },
+        },
+        {
+            name: "All good",
+            reqURL: "http://fuckintsite.com/update/counter/name/111",
+            want: want{
+                code: http.StatusOK,
+                val:222,
                 response: "",
             },
         },
     }
     r := chi.NewRouter()
-    r.Post("/update/counter/{name}/{val}",UpdateCounter(&storageMock{}))
+    stor := &storageMock{}
+    r.Method(http.MethodPost, "/update/counter/{name}/{val}",UpdateCounter(stor))
     for _, test := range tests{
         t.Run(test.name, func(t *testing.T) {
             req := httptest.NewRequest(http.MethodPost, test.reqURL, nil)
@@ -134,6 +165,7 @@ func TestUpdateCounter(t *testing.T) {
             require.NoError(t,err)
             
             assert.Equal(t,test.want.response, string(resBody))
+            assert.Equal(t,test.want.val, int64(stor.val))
             res.Body.Close()
         })
     }
@@ -146,7 +178,7 @@ func TestGetGauge(t *testing.T) {
     tests := []struct{
         reqURL string
         name string
-        val storage.Gauge
+        val float64
         want want
     }{
         {
@@ -170,7 +202,7 @@ func TestGetGauge(t *testing.T) {
     stor := &storageMock{}
 
     r := chi.NewRouter()
-    r.Post("/value/gauge/{name}",GetGauge(stor))
+    r.Method(http.MethodPost,"/value/gauge/{name}",GetGauge(stor))
 
     for _, test := range tests{
         stor.val = test.val
@@ -206,7 +238,7 @@ func TestGetCounter(t *testing.T) {
     tests := []struct{
         reqURL string
         name string
-        val storage.Gauge
+        val float64
         want want
     }{
         {
@@ -230,7 +262,7 @@ func TestGetCounter(t *testing.T) {
     stor := &storageMock{}
 
     r := chi.NewRouter()
-    r.Post("/value/counter/{name}",GetCounter(stor))
+    r.Method(http.MethodPost, "/value/counter/{name}", GetCounter(stor))
 
     for _, test := range tests{
         stor.val = test.val

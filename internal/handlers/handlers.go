@@ -1,20 +1,22 @@
 package handlers
 
 import (
-    "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 
-    "net/http"
-    "strconv"
-    "bytes"
-    "sort"
-    "io"
-    "github.com/Ord1nI/metrix/internal/storage"
+	"bytes"
+	"cmp"
+	"encoding/json"
+	"io"
+	"net/http"
+	"slices"
+	"strconv"
+
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
 
-func UpdateGauge(s storage.Adder) func(res http.ResponseWriter, req *http.Request) {
-    return func(res http.ResponseWriter, req *http.Request) {
-        
+func UpdateGauge(s storage.Adder) http.Handler {
+    fHandler := func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req, "name")
         v := chi.URLParam(req, "val")
 
@@ -25,13 +27,14 @@ func UpdateGauge(s storage.Adder) func(res http.ResponseWriter, req *http.Reques
             return
         }
 
-        s.AddGauge(name,storage.Gauge(val))
+        s.Add(name, storage.Gauge(val))
         res.WriteHeader(http.StatusOK)
     }
+    return http.HandlerFunc(fHandler)
 }
 
-func UpdateCounter(s storage.Adder) func(res http.ResponseWriter, req *http.Request){
-    return func(res http.ResponseWriter, req *http.Request) {
+func UpdateCounter(s storage.Adder) http.Handler{
+    fHandler := func(res http.ResponseWriter, req *http.Request) {
 
         name := chi.URLParam(req, "name")
         v := chi.URLParam(req, "val")
@@ -43,15 +46,17 @@ func UpdateCounter(s storage.Adder) func(res http.ResponseWriter, req *http.Requ
             return
         }
 
-        s.AddCounter(name, storage.Counter(val))
+        s.Add(name, storage.Counter(val))
         res.WriteHeader(http.StatusOK)
     }
+    return http.HandlerFunc(fHandler)
 }
 
-func GetGauge(s storage.Getter) func(res http.ResponseWriter, req *http.Request) {
-    return func(res http.ResponseWriter, req *http.Request) {
+func GetGauge(s storage.Getter) http.Handler {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
-        v, err := s.GetGauge(name)
+        var v storage.Gauge
+        err := s.Get(name, &v)
 
         if err != nil {
             http.Error(res, "Unknown metric", http.StatusNotFound)
@@ -62,13 +67,15 @@ func GetGauge(s storage.Getter) func(res http.ResponseWriter, req *http.Request)
         io.WriteString(res, strconv.FormatFloat(float64(v), 'f', -1, 64))
         res.Write([]byte("\n"))
     }
+    return http.HandlerFunc(fHandler)
 }
 
-func GetCounter(s storage.Getter) func(res http.ResponseWriter, req *http.Request){
+func GetCounter(s storage.Getter) http.Handler {
 
-    return func(res http.ResponseWriter, req *http.Request) {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
-        v, err := s.GetCounter(name)
+        var v storage.Counter
+        err := s.Get(name, &v)
 
         if err != nil {
             http.Error(res, "Unknown metric", http.StatusNotFound)
@@ -79,45 +86,63 @@ func GetCounter(s storage.Getter) func(res http.ResponseWriter, req *http.Reques
         io.WriteString(res, strconv.FormatInt(int64(v), 10))
         res.Write([]byte("\n"))
     }
-
+    return http.HandlerFunc(fHandler)
 }
+func MainPage(m json.Marshaler) http.Handler {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
-func GetAllMetrics(stor *storage.MemStorage) func(res http.ResponseWriter, req *http.Request) {
-    return func(res http.ResponseWriter, req *http.Request) {
+        var metricArr []storage.Metric
+
+        data, err := json.Marshal(m)
+
+        if err != nil {
+            http.Error(res, "error", http.StatusNotFound)
+        }
+
+        err = json.Unmarshal(data, &metricArr)
+
+        if err != nil {
+            http.Error(res, "couldn't unmarshal", http.StatusNotFound)
+        }
+
+        slices.SortStableFunc(metricArr, func(a,b storage.Metric) int {
+            return cmp.Compare(a.ID, b.ID)})
+
         var html bytes.Buffer
+
         html.WriteString(`<html>
                           <body>`)
 
-        GaugeNameArr := stor.GetGaugeNames()
-        sort.Strings(GaugeNameArr)
-        CounterNameArr := stor.GetCounterNames()
-        sort.Strings(CounterNameArr)
-
-        html.WriteString(`<b> GAUGE METRICS: </b>`)
-
-        for _, i := range GaugeNameArr {
-            html.WriteString(`<p>`)
-            html.WriteString(i)
-            html.WriteString(" = ")
-            html.WriteString(strconv.FormatFloat(float64(stor.Gauge[i]), 'f', -1, 64))
-            html.WriteString(`</p>`)
-        }
-        html.WriteString(`<b> COUNTER METRICS: </b>`)
-
-        for _, i := range CounterNameArr {
-            html.WriteString(`<p>`)
-            html.WriteString(i)
-            html.WriteString(" = ")
-            html.WriteString(strconv.FormatInt(int64(stor.Counter[i]), 10))
-            html.WriteString(`</p>`)
+        for _, v := range metricArr {
+            if v.MType == "gauge" {
+                html.WriteString(`<p>`)
+                html.WriteString(v.ID)
+                html.WriteString(" = ")
+                html.WriteString(strconv.FormatFloat(*v.Value, 'f', -1, 64))
+                html.WriteString(`</p>`)
+            }
+            if v.MType == "counter" {
+                html.WriteString(`<p>`)
+                html.WriteString(v.ID)
+                html.WriteString(" = ")
+                html.WriteString(strconv.FormatInt(*v.Delta, 10))
+                html.WriteString(`</p>`)
+            }
         }
 
         html.WriteString(`</html>
                           </body>`)
+
+
+        res.Header().Add("Content-Type", "text/html")
         res.WriteHeader(http.StatusOK)
         res.Write(html.Bytes())
     }
+
+    return http.HandlerFunc(fHandler)
 }
+
+
 
 func NotFound(res http.ResponseWriter, req *http.Request) {
     res.WriteHeader(http.StatusNotFound)

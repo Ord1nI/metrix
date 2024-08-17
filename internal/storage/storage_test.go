@@ -33,12 +33,14 @@ func TestAddGauge(t *testing.T) {
         },
     }
     
-    stor := NewEmptyStorage()
+    stor := NewMemStorage()
 
     for _, v := range tests {
         t.Run(v.name,func(t *testing.T){
-        stor.AddGauge(v.name, v.val)
-        assert.Equal(t, v.val, stor.Gauge[v.name])
+        stor.Add(v.name, v.val)
+        val, ok := stor.Gauge.Get(v.name)
+        assert.Equal(t, ok, true)
+        assert.Equal(t, v.val, val)
         })
     }
 }
@@ -66,12 +68,16 @@ func TestAddCounter(t *testing.T) {
         },
     }
     
-    stor := NewEmptyStorage()
+    stor := NewMemStorage()
 
     for _, v := range tests {
         t.Run(v.name,func(t *testing.T){
-        stor.AddCounter(v.name, v.val)
-        assert.Equal(t, v.val, stor.Counter[v.name])
+        stor.Add(v.name, v.val)
+        
+        val, ok := stor.Counter.Get(v.name)
+        assert.Equal(t, ok, true)
+
+        assert.Equal(t, v.val, val)
         })
     }
 }
@@ -102,12 +108,13 @@ func TestGetGeoge(t *testing.T) {
         },
     }
 
-    stor := NewEmptyStorage()
+    stor := NewMemStorage()
 
     for _, test := range tests {
         t.Run(test.name, func(t*testing.T){
-        stor.Gauge[test.name] = test.val
-        v, err := stor.GetGauge(test.name)
+        stor.Gauge.Add(test.name, test.val)
+        var v Gauge
+        err := stor.Get(test.name, &v)
         assert.Equal(t, test.val, v)
         assert.Equal(t, nil, err)
         })
@@ -140,12 +147,13 @@ func TestGetCounter(t *testing.T) {
         },
     }
 
-    stor := NewEmptyStorage()
+    stor := NewMemStorage()
 
     for _, test := range tests {
         t.Run(test.name, func(t*testing.T){
-        stor.Counter[test.name] = test.val
-        v, err := stor.GetCounter(test.name)
+        stor.Counter.Add(test.name, test.val)
+        var v Counter
+        err := stor.Get(test.name, &v)
         assert.Equal(t, test.val, v)
         assert.Equal(t, nil, err)
         })

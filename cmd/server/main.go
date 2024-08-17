@@ -1,46 +1,81 @@
 package main
 
 import (
-    "github.com/caarlos0/env/v11"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 
-    "flag"
-    "net/http"
-    "github.com/Ord1nI/metrix/internal/storage"
+	"net/http"
+	"time"
+
+	"github.com/Ord1nI/metrix/internal/compressor"
+	"github.com/Ord1nI/metrix/internal/logger"
+	"github.com/Ord1nI/metrix/internal/storage"
+    "github.com/Ord1nI/metrix/internal/configs"
 )
 
-type Config struct {
-    Address string `env:"ADDRESS" envDefault:"localhost:8080"` //envvar $ADDRESS or envDefault
+
+var config configs.ServerConfig
+
+var sugar *zap.SugaredLogger
+
+
+func StartDataSaver(s *storage.MemStorage) {
+    for {
+        time.Sleep(time.Duration(config.StoreInterval) * time.Second)
+        err := s.WriteToFile(config.FileStoragePath)
+        if err != nil {
+            sugar.Fatal(err)
+        } else {
+            sugar.Info("Data saved")
+        }
+    }
 }
 
-var envVars Config
-
-func getConf() {
-    err := env.Parse(&envVars)
-
+func initF() {
+    log, err := logger.NewLogger()
     if err != nil {
         panic(err)
     }
+    defer log.Sync()
+    sugar = log.Sugar()
+    sugar.Infoln("loger created successfuly")
 
-    var fAddress = flag.String("a", envVars.Address, "enter IP format ip:port")
-
-    flag.Parse()
-
-    if envVars.Address == "localhost:8080" {
-        envVars.Address = *fAddress
-    }
+    configs.ServerGetConf(sugar, &config)
+    sugar.Info("Config vars: ", config)
 }
-
 
 func main() {
-    getConf()
 
-    stor := storage.NewEmptyStorage()
+    initF()
 
-    r := CreateRouter(stor)
+    stor := storage.NewMemStorage()
 
-
-    err := http.ListenAndServe(envVars.Address, r)
-    if err != nil {
-        panic(err)
+    if config.FileStoragePath != "" && config.Restore {
+        err := stor.GetFromFile(config.FileStoragePath)
+        if err != nil {
+            sugar.Info(err)
+        } else {
+            sugar.Info("Data loaded succesful",stor.Gauge)
+        }
     }
+
+    var r chi.Router
+
+    if config.StoreInterval == 0 {
+        r = CreateRouter(stor,
+            logger.HandlerLogging(sugar), 
+            compressor.GzipMiddleware(sugar), 
+            storage.SaveToFileMW(sugar,config.FileStoragePath,stor))
+    } else {
+        r = CreateRouter(stor, 
+            logger.HandlerLogging(sugar), 
+            compressor.GzipMiddleware(sugar))
+    }
+
+    if  config.FileStoragePath != "" && 
+        config.StoreInterval != 0 {
+            go StartDataSaver(stor)
+    }
+
+    http.ListenAndServe(config.Address, r)
 }

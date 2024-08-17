@@ -1,85 +1,192 @@
 package storage
 
 import (
-    "fmt"
-    // "sort"
+	"encoding/json"
+	"errors"
+	"os"
+	"reflect"
 )
 
-type Gauge float64
-type Counter int64
-
-type Getter interface{
-    GetGauge(name string) (Gauge, error)
-    GetCounter(name string) (Counter, error)
+type Adder interface {
+    Add(name string, val interface{}) (error)
 }
 
-type Adder interface{
-    AddGauge(name string, val Gauge)
-    AddCounter(name string, val Counter)
+type Getter  interface {
+    Get(name string, val interface{}) (error)
 }
 
-type GetAdder interface{
-    Adder
-    Getter
+type MetricGetAdder interface {
+    AddMetric(Metric) error
+    GetMetric(string, string) (*Metric, bool)
 }
 
 type MemStorage struct{
-    Gauge map[string]Gauge
-    Counter map[string]Counter
+    Gauge *MGauge
+    Counter *MCounter
 }
 
-func NewEmptyStorage() *MemStorage{
-    return &MemStorage{ 
-        Gauge: make(map[string]Gauge),
-        Counter: make(map[string]Counter),
+func NewMemStorage() *MemStorage{
+    return &MemStorage{
+        Gauge: NewGaugeM(),
+        Counter: NewCounterM(),
     }
 }
 
-func (m *MemStorage) GetGauge(name string) (Gauge, error) {
-    val, ok := m.Gauge[name]
-    if !ok {
-        return 0, fmt.Errorf("no %s in Gauge", name)
+func (m *MemStorage) Add(name string, val interface{}) error {
+    switch val := val.(type) {
+    case Gauge:
+        m.Gauge.Add(name, val)
+        return nil
+    case Counter:
+        m.Counter.Add(name, val)
+        return nil
     }
-    return val, nil
+    return errors.New("incorect metric type")
 }
 
-func (m *MemStorage) GetCounter(name string) (Counter, error) {
-    val, ok := m.Counter[name]
-    if !ok {
-        return 0, fmt.Errorf("no %s in Counter", name)
+func (m *MemStorage)AddMetric(metric Metric) error{
+    if metric.ID == "" {
+        return errors.New("metric must hame name")
     }
-    return val, nil
-}
-
-func (m *MemStorage) AddGauge(name string, val Gauge) {
-    m.Gauge[name] = val
-}
-
-func (m *MemStorage) AddCounter(name string, val Counter) {
-    m.Counter[name] += val
-}
-
-func (m *MemStorage) AddGaugeMap(mG map[string]Gauge) {
-    m.Gauge = mG
-}
-
-func (m *MemStorage) AddCounterMap(mC map[string]Counter) {
-    m.Counter = mC
-}
-
-func (m *MemStorage) GetGaugeNames() []string{
-    arr := make([]string, 0, len(m.Gauge))
-    for i := range m.Gauge {
-        arr = append(arr, i)
+    switch metric.MType {
+    case "gauge":
+        m.Gauge.Add(metric.ID, Gauge(*metric.Value))
+        return nil
+    case "counter":
+        m.Counter.Add(metric.ID, Counter(*metric.Delta))
+        return nil
     }
-    return arr
+    return errors.New("bad type")
 }
 
-func (m *MemStorage) GetCounterNames() []string{
-    arr := make([]string, 0, len(m.Counter))
-    for i := range m.Counter {
-        arr = append(arr, i)
+func (m *MemStorage)GetMetric(name, mType string) (*Metric, bool){
+    switch mType {
+    case "gauge":
+        val, ok := m.Gauge.Get(name)
+        fval := float64(val)
+
+        if !ok {
+            return nil, false
+        }
+
+        mj := Metric{
+            ID : name,
+            MType : mType,
+            Value : &fval,
+        }
+        return &mj, true
+
+    case "counter":
+        val, ok := m.Counter.Get(name)
+        ival := int64(val)
+
+        if !ok {
+            return nil, false
+        }
+
+        mj := Metric{
+            ID:name,
+            MType:mType,
+            Delta:&ival,
+        }
+        return &mj, true
+    }
+    return nil, false
+}
+
+func (m *MemStorage) Get(name string, val interface{}) error{
+    v := reflect.ValueOf(val)
+    if v.Kind() == reflect.Pointer {
+        v = v.Elem()
+        switch v.Type().Name(){
+            case "Gauge":
+                val, ok := m.Gauge.Get(name)
+                if ok {
+                    v.SetFloat(float64(val))
+                    return nil
+                } else {
+                    return errors.New("no variable by this name")
+                }
+            case "Counter":
+                val, ok := m.Counter.Get(name)
+                if ok {
+                    v.SetInt(int64(val))
+                    return nil
+                } else {
+                    return errors.New("no variable by this name")
+                }
+            default:
+                return errors.New("incorect val type")
+        }
+    }
+    return errors.New("incorect val")
+}
+
+func (m *MemStorage) MarshalJSON() ([]byte, error){
+    jm := m.Gauge.ToMetrics()
+    jm = append(jm, m.Counter.ToMetrics()...)
+
+    r, err := json.Marshal(jm)
+    if err != nil {
+        return nil,err
     }
 
-    return arr
+    return r, nil
+}
+
+func (m *MemStorage) UnmarshalJSON(d []byte) error {
+    var metrics []Metric
+
+    err := json.Unmarshal(d, &metrics)
+
+    if err != nil {
+        return err
+    }
+
+    for _, v := range metrics {
+        m.AddMetric(v)
+    }
+
+    return nil
+}
+
+func (m *MemStorage) ToMetrics() ([]Metric){
+    jm := m.Gauge.ToMetrics()
+    jm = append(jm, m.Counter.ToMetrics()...)
+    return jm
+}
+
+func (m *MemStorage) AddGauge(g MGauge) {
+    m.Gauge = &g
+}
+
+func (m *MemStorage) AddCounter(c MCounter) {
+    m.Counter = &c
+}
+
+func (m *MemStorage) WriteToFile(f string) error {
+    json, err := m.MarshalJSON()
+
+    if err != nil {
+        return err
+     }
+
+     err = os.WriteFile(f, json, 0666)
+     return err
+}
+
+func (m *MemStorage) GetFromFile(f string) (error) {
+    buf, err := os.ReadFile(f)
+
+    if err != nil {
+        return err
+    }
+
+    err = m.UnmarshalJSON(buf)
+
+    if err != nil {
+        return err
+    }
+
+    return nil
 }

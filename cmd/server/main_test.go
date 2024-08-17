@@ -3,73 +3,19 @@ package main
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-    "github.com/go-chi/chi/v5"
 
-    "io"
-    "errors"
-    "testing"
-    "net/http"
-    "net/http/httptest"
-    "github.com/Ord1nI/metrix/internal/storage"
-    "github.com/Ord1nI/metrix/internal/handlers"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
-
-type storageMock struct{
-    val storage.Gauge
-    name string
-}
-
-func newSM() *storageMock{
-    return &storageMock{
-        val:0,
-    }
-}
-
-func (s *storageMock) AddGauge(name string, val storage.Gauge) {
-    s.val = val
-}
-
-func (s *storageMock) AddCounter(name string, val storage.Counter) {
-    s.val = storage.Gauge(val)
-}
-
-func (s *storageMock) GetGauge(name string) (storage.Gauge, error){
-    if s.name == name {
-        return s.val, nil
-    }
-    return 0, errors.New("error")
-}
-
-func (s *storageMock) GetCounter(name string) (storage.Counter, error){
-    if s.name == name {
-        return storage.Counter(s.val), nil
-    }
-    return 0, errors.New("error")
-}
-
 func TestMain(t *testing.T) {
-    stor := newSM()
+    stor := storage.NewMemStorage()
 
-    r := chi.NewRouter()
-
-    r.Route("/update", func(r chi.Router) {
-        r.HandleFunc("/*", handlers.BadRequest)                      // ANY /update/
-
-
-        r.Route("/gauge", updateGaugeRoute(stor))         // ANY /update/gauge/*
-
-        r.Route("/counter", updateCounterRoute(stor))     // Any /update/counter/*
-        
-    })
-
-    r.Route("/value", func(r chi.Router) {
-        r.HandleFunc("/*", handlers.BadRequest)            // Any /value/
-
-        r.Route("/gauge", valueGaugeRoute(stor))        
-
-        r.Route("/counter", valueCounterRoute(stor))   
-    })
+    r := CreateRouter(stor)
 
     serv := httptest.NewServer(r)
     client := serv.Client()
@@ -78,33 +24,26 @@ func TestMain(t *testing.T) {
     tGauge(t, stor, serv, client)
     tCounterGet(t, stor, serv, client)
     tGaugeGet(t, stor, serv, client)
-
-    
 }
-func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *http.Client){
+
+func tCounter(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, client *http.Client){
      
     type want struct {
         code int
         res string
-        val storage.Gauge
+        val storage.Counter
     }
 
     tests := []struct{
         URL string
+        name string
         want want
     }{
-        {
-            URL: "",
-            want: want{
-                code:http.StatusNotFound,
-                res: "404 page not found\n",
-            },
-        },
         {
             URL: "/update",
             want: want{
                 code: http.StatusBadRequest,
-                res: "Bad Request\n",
+                res: "not json request\n",
             },
         },
         {
@@ -137,6 +76,7 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
         },
         {
             URL: "/update/counter/name/123.213",
+            name: "name",
             want: want{
                 code:http.StatusBadRequest,
                 res: "Incorect metric value\n",
@@ -145,6 +85,7 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
         },
         {
             URL: "/update/counter/name1/-123",
+            name: "name1",
             want: want{
                 code:http.StatusOK,
                 res: "",
@@ -153,16 +94,16 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
         },
         {
             URL: "/update/counter/name1/123",
+            name: "name1",
             want: want{
                 code:http.StatusOK,
                 res: "",
-                val: 123,
+                val: 0,
             },
         },
     }
     for _, test := range tests {
         t.Run("testCounter " + serv.URL+test.URL,func(t *testing.T) {
-            stor.val = 0
 
             res, err := client.Post(serv.URL+test.URL,"text/plain",nil)
 
@@ -173,14 +114,14 @@ func tCounter(t *testing.T, stor *storageMock, serv *httptest.Server, client *ht
             r, _ := io.ReadAll(res.Body)
             res.Body.Close()
             assert.Equal(t, test.want.res, string(r))
-            if stor == nil {
-                stor.val = 0
+            val, ok := stor.Counter.Get(test.name)
+            if ok {
+                assert.Equal(t, test.want.val, val)
             }
-            assert.Equal(t, test.want.val, stor.val)
         })
     }
 }
-func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http.Client) {
+func tGauge(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, client *http.Client) {
      
     type want struct {
         code int
@@ -190,20 +131,14 @@ func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http
 
     tests := []struct{
         URL string
+        name string
         want want
     }{
-        {
-            URL: "",
-            want: want{
-                code:http.StatusNotFound,
-                res: "404 page not found\n",
-            },
-        },
         {
             URL: "/update",
             want: want{
                 code: http.StatusBadRequest, 
-                res: "Bad Request\n",
+                res: "not json request\n",
             },
         },
         {
@@ -236,6 +171,7 @@ func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http
         },
         {
             URL: "/update/gauge/name/123.213",
+            name: "name",
             want: want{
                 code:http.StatusOK,
                 res: "",
@@ -244,6 +180,7 @@ func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http
         },
         {
             URL: "/update/gauge/name1/-123.213",
+            name: "name1",
             want: want{
                 code:http.StatusOK,
                 res: "",
@@ -253,8 +190,6 @@ func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http
     }
     for _, test := range tests {
         t.Run(serv.URL+test.URL,func(t *testing.T) {
-            stor.val = 0
-
             res, err := client.Post(serv.URL+test.URL,"text/plain",nil)
 
             require.NoError(t,err)
@@ -264,14 +199,14 @@ func tGauge(t *testing.T, stor *storageMock, serv *httptest.Server, client *http
             r, _ := io.ReadAll(res.Body)
             res.Body.Close()
             assert.Equal(t, test.want.res, string(r))
-            if stor == nil {
-                stor.val = 0
+            v, ok := stor.Gauge.Get(test.name)
+            if ok {
+                assert.Equal(t, test.want.val, v)
             }
-            assert.Equal(t, test.want.val, stor.val)
         })
     }
 }
-func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *http.Client) {
+func tCounterGet(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, client *http.Client) {
 
     type want struct {
         code int
@@ -280,17 +215,9 @@ func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client 
 
     tests := []struct{
         URL string
-        value storage.Counter
         name string
         want want
     }{
-        {
-            URL: "",
-            want: want{
-                code:http.StatusNotFound,
-                res: "404 page not found\n",
-            },
-        },
         {
             URL: "/value/",
             want: want{
@@ -314,19 +241,18 @@ func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client 
         },
         {
             URL: "/value/counter/name234",
-            name: "name",
+            name: "name234",
             want: want{
                 code:http.StatusNotFound,
                 res: "Unknown metric\n",
             },
         },
         {
-            URL: "/value/counter/name",
-            value: 233,
+            URL: "/value/counter/name1",
             name: "name",
             want: want{
                 code:http.StatusOK,
-                res: "233\n",
+                res: "0\n",
             },
         },
         {
@@ -340,10 +266,6 @@ func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client 
     for _, test := range tests {
         t.Run(test.URL, func(t *testing.T) {
 
-            stor.val = storage.Gauge(test.value)
-
-            stor.name = test.name
-
             res, err := client.Get(serv.URL+test.URL)
 
             require.NoError(t,err)
@@ -355,7 +277,7 @@ func tCounterGet(t *testing.T, stor *storageMock, serv *httptest.Server, client 
         })
     }
 }
-func tGaugeGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *http.Client) {
+func tGaugeGet(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, client *http.Client) {
     type want struct {
         code int
         res string
@@ -363,17 +285,9 @@ func tGaugeGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *h
 
     tests := []struct{
         URL string
-        value storage.Gauge
         name string
         want want
     }{
-        {
-            URL: "",
-            want: want{
-                code:http.StatusNotFound,
-                res: "404 page not found\n",
-            },
-        },
         {
             URL: "/value/",
             want: want{
@@ -405,29 +319,18 @@ func tGaugeGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *h
         },
         {
             URL: "/value/gauge/name",
-            value: 233.213,
             name: "name",
             want: want{
                 code:http.StatusOK,
-                res: "233.213\n",
+                res: "123.213\n",
             },
         },
         {
             URL: "/value/gauge/name1",
-            value: 0,
             name: "name1",
             want: want{
                 code:http.StatusOK,
-                res: "0\n",
-            },
-        },
-        {
-            URL: "/value/gauge/name2",
-            value: -0,
-            name: "name2",
-            want: want{
-                code:http.StatusOK,
-                res: "0\n",
+                res: "-123.213\n",
             },
         },
         {
@@ -440,10 +343,6 @@ func tGaugeGet(t *testing.T, stor *storageMock, serv *httptest.Server, client *h
     }
     for _, test := range tests {
         t.Run(test.URL, func(t *testing.T) {
-
-            stor.val = storage.Gauge(test.value)
-
-            stor.name = test.name
 
             res, err := client.Get(serv.URL+test.URL)
 
