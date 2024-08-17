@@ -6,13 +6,20 @@ import (
 	"net/http"
 )
 
+type Logger interface {
+    Infoln(args ...interface{})
+    Errorln(args ...interface{})
+    Warnln(args ...interface{})
+    Fatalln(args ...interface{})
+}
+
 func NewLogger() (*zap.Logger, error){
     logger, err := zap.NewDevelopment()
     return logger, err
 }
 
-type (
 
+type (
     responseData struct {
         status int
         size int

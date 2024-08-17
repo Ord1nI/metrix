@@ -2,9 +2,13 @@ package storage
 
 import (
 	"encoding/json"
-
-	"github.com/Ord1nI/metrix/internal/myjson"
 )
+type Metric struct {
+    ID string `json:"id"`
+    MType string `json:"type"`
+    Delta *int64 `json:"delta,omitempty"`
+    Value *float64 `json:"value,omitempty"`
+}
 
 type Gauge float64
 type Counter int64
@@ -40,22 +44,22 @@ func (mC *MCounter) Add(name string, val Counter) {
     (*mC)[name] += val
 }
 
-func(mC *MCounter) ToMetrics() ([]myjson.Metric){
-    jm := make([]myjson.Metric,0,len(*mC))
+func(mC *MCounter) ToMetrics() ([]Metric){
+    jm := make([]Metric,0,len(*mC))
 
     for i, v := range (*mC) {
         fV := int64(v)
-        jm = append(jm, myjson.Metric{ID:i,MType:"counter",Delta:&fV})
+        jm = append(jm, Metric{ID:i,MType:"counter",Delta:&fV})
     }
     return jm
 }
 
-func(mG *MGauge) ToMetrics() ([]myjson.Metric) {
-    jm := make([]myjson.Metric,0,len(*mG))
+func(mG *MGauge) ToMetrics() ([]Metric) {
+    jm := make([]Metric,0,len(*mG))
 
     for i, v := range (*mG) {
         fV := float64(v)
-        jm = append(jm, myjson.Metric{ID:i,MType:"gauge",Value:&fV})
+        jm = append(jm, Metric{ID:i,MType:"gauge",Value:&fV})
     }
     return jm
 }

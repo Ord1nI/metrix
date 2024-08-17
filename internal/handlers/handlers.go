@@ -11,7 +11,6 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"
 )
 
@@ -92,7 +91,7 @@ func GetCounter(s storage.Getter) http.Handler {
 func MainPage(m json.Marshaler) http.Handler {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
-        var metricArr []myjson.Metric
+        var metricArr []storage.Metric
 
         data, err := json.Marshal(m)
 
@@ -106,7 +105,7 @@ func MainPage(m json.Marshaler) http.Handler {
             http.Error(res, "couldn't unmarshal", http.StatusNotFound)
         }
 
-        slices.SortStableFunc(metricArr, func(a,b myjson.Metric) int {
+        slices.SortStableFunc(metricArr, func(a,b storage.Metric) int {
             return cmp.Compare(a.ID, b.ID)})
 
         var html bytes.Buffer

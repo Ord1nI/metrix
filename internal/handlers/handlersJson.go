@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"
 
 	"encoding/json"
@@ -28,7 +27,7 @@ func UpdateJSON(s storage.MetricGetAdder) http.Handler{
             return
         }
 
-        var metric myjson.Metric
+        var metric storage.Metric
 
         err = json.Unmarshal(data, &metric)
 
@@ -77,7 +76,7 @@ func GetJSON(s storage.MetricGetAdder) http.Handler {
             return
         }
 
-        var metric myjson.Metric
+        var metric storage.Metric
         err = json.Unmarshal(data, &metric)
 
         if err != nil {

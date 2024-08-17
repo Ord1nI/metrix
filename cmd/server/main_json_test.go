@@ -12,7 +12,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"
 )
 
@@ -39,23 +38,23 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
     type want struct {
         code int
         res string
-        metric myjson.Metric
+        metric storage.Metric
     }
 
     tests := []struct{
         name string
-        metric myjson.Metric
+        metric storage.Metric
         want want
     }{
         {
             name: "name1",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "name",
                 MType: "gauge",
                 Value: ptrFloat(51.34),
             },
             want: want{
-                metric: myjson.Metric{
+                metric: storage.Metric{
                     ID: "name",
                     MType: "gauge",
                     Value: ptrFloat(51.34),
@@ -66,7 +65,7 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
         },
         {
             name: "with out metric name",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "",
                 MType: "gauge",
                 Value: ptrFloat(51.34),
@@ -78,7 +77,7 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
         },
         {
             name: "with out metric type",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "name",
                 MType: "",
                 Value: ptrFloat(51.34),
@@ -90,13 +89,13 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
         },
         {
             name: "name3",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "name",
                 MType: "counter",
                 Delta: ptrInt(123),
             },
             want: want{
-                metric: myjson.Metric{
+                metric: storage.Metric{
                     ID: "name",
                     MType: "counter",
                     Delta: ptrInt(123),
@@ -107,14 +106,14 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
         },
         {
             name: "name3",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "name",
                 MType: "counter",
                 Delta: ptrInt(123),
             },
             want: want{
                 code:http.StatusOK,
-                metric: myjson.Metric{
+                metric: storage.Metric{
                     ID: "name",
                     MType: "counter",
                     Delta: ptrInt(246),
@@ -138,7 +137,7 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
             assert.Equal(t, test.want.code, res.StatusCode)
 
             if res.Header.Get("Content-Type") == "application/json" {
-                var metric myjson.Metric
+                var metric storage.Metric
 
                 data, _ = io.ReadAll(res.Body)
                 json.Unmarshal(data, &metric)
@@ -157,24 +156,24 @@ func tGetJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
     type want struct {
         code int
         res string
-        metric myjson.Metric
+        metric storage.Metric
     }
 
     tests := []struct{
         name string
-        metric myjson.Metric
+        metric storage.Metric
         want want
     }{
         {
             name: "name1",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "name",
                 MType: "gauge",
             },
             want: want{
                 code:http.StatusOK,
                 res: "",
-                metric: myjson.Metric{
+                metric: storage.Metric{
                     ID: "name",
                     MType: "gauge",
                     Value: ptrFloat(51.34),
@@ -183,7 +182,7 @@ func tGetJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
         },
         {
             name: "without metric name",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "",
                 MType: "gauge",
             },
@@ -194,7 +193,7 @@ func tGetJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
         },
         {
             name: "without metric type",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "name",
                 MType: "",
             },
@@ -205,12 +204,12 @@ func tGetJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
         },
         {
             name: "name2",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "name",
                 MType: "counter",
             },
             want: want{
-                metric: myjson.Metric{
+                metric: storage.Metric{
                     ID: "name",
                     MType: "counter",
                     Delta: ptrInt(246),
@@ -235,7 +234,7 @@ func tGetJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
             assert.Equal(t, test.want.code, res.StatusCode)
 
             if res.Header.Get("Content-Type") == "application/json" {
-                var metric myjson.Metric
+                var metric storage.Metric
 
                 data, _ = io.ReadAll(res.Body)
                 json.Unmarshal(data, &metric)

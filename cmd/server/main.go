@@ -1,75 +1,28 @@
 package main
 
 import (
-	"github.com/caarlos0/env/v11"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
-	"flag"
 	"net/http"
 	"time"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/storage"
+    "github.com/Ord1nI/metrix/internal/configs"
 )
 
-type Config struct {
-    Address string `env:"ADDRESS" envDefault:"localhost:8080"` //envvar $ADDRESS or envDefault
-    StoreInterval int `env:"STORE_INTERVAL" envDefault:"300"`  //envvar $STORE_INTERVAL or envDefault
-    FileStoragePath string `env:"FILE_STORAGE_PATH"`           //envvar $FILE_STORAGE or envDefault
-    Restore bool `env:"RESTORE" envDefault:"true"`             //envvar $RESTORE or envDefault
-} 
 
-var envVars Config
+var config configs.ServerConfig
 
 var sugar *zap.SugaredLogger
 
-func initLogger() (*zap.Logger, error){
-    log, logErr := logger.NewLogger()
-    if logErr != nil {
-        return nil, logErr
-    }
-    sugar = log.Sugar()
-
-    return log, nil
-}
-
-func getConf() {
-    err := env.Parse(&envVars)
-
-    if err != nil {
-        sugar.Error("Couldn't get env vars")
-        envVars.Address = "localhost:8080"
-    }
-
-    var fAddress = flag.String("a", envVars.Address, "enter IP format ip:port")
-    var fStoreInterval = flag.Int("i", envVars.StoreInterval,
-        "enter interval (in seconds) between all data saved to specified file")
-    var fFileStoragePath = flag.String("f", envVars.FileStoragePath,
-        "enter path to file where all data will be saved")
-    var fRestore = flag.Bool("r", envVars.Restore, "whether or not load data to specified file")
-
-    flag.Parse()
-
-    if envVars.Address == "localhost:8080" {
-        envVars.Address = *fAddress
-    }
-    if envVars.StoreInterval == 300 {
-        envVars.StoreInterval = *fStoreInterval
-    }
-    if envVars.FileStoragePath == "" {
-        envVars.FileStoragePath = *fFileStoragePath
-    }
-    if envVars.Restore {
-        envVars.Restore = *fRestore
-    }
-}
 
 func StartDataSaver(s *storage.MemStorage) {
     for {
-        time.Sleep(time.Duration(envVars.StoreInterval) * time.Second)
-        err := s.WriteToFile(envVars.FileStoragePath)
+        time.Sleep(time.Duration(config.StoreInterval) * time.Second)
+        err := s.WriteToFile(config.FileStoragePath)
         if err != nil {
             sugar.Fatal(err)
         } else {
@@ -77,16 +30,18 @@ func StartDataSaver(s *storage.MemStorage) {
         }
     }
 }
+
 func initF() {
-    log, err := initLogger()
+    log, err := logger.NewLogger()
     if err != nil {
         panic(err)
-    } else {
-        sugar.Info("Logger successfully inited")
     }
     defer log.Sync()
-    getConf()
-    sugar.Info("Config vars: ", envVars)
+    sugar = log.Sugar()
+    sugar.Infoln("loger created successfuly")
+
+    configs.ServerGetConf(sugar, &config)
+    sugar.Info("Config vars: ", config)
 }
 
 func main() {
@@ -95,8 +50,8 @@ func main() {
 
     stor := storage.NewMemStorage()
 
-    if envVars.FileStoragePath != "" && envVars.Restore {
-        err := stor.GetFromFile(envVars.FileStoragePath)
+    if config.FileStoragePath != "" && config.Restore {
+        err := stor.GetFromFile(config.FileStoragePath)
         if err != nil {
             sugar.Info(err)
         } else {
@@ -106,21 +61,21 @@ func main() {
 
     var r chi.Router
 
-    if envVars.StoreInterval == 0 {
+    if config.StoreInterval == 0 {
         r = CreateRouter(stor,
             logger.HandlerLogging(sugar), 
-            compressor.GzipMiddleware, 
-            storage.SaveToFileMW(envVars.FileStoragePath,stor))
+            compressor.GzipMiddleware(sugar), 
+            storage.SaveToFileMW(sugar,config.FileStoragePath,stor))
     } else {
         r = CreateRouter(stor, 
             logger.HandlerLogging(sugar), 
-            compressor.GzipMiddleware)
+            compressor.GzipMiddleware(sugar))
     }
 
-    if  envVars.FileStoragePath != "" && 
-        envVars.StoreInterval != 0 {
+    if  config.FileStoragePath != "" && 
+        config.StoreInterval != 0 {
             go StartDataSaver(stor)
     }
 
-    http.ListenAndServe(envVars.Address, r)
+    http.ListenAndServe(config.Address, r)
 }

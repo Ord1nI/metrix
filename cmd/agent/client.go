@@ -4,7 +4,6 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
-	"github.com/Ord1nI/metrix/internal/myjson"
 	"github.com/Ord1nI/metrix/internal/storage"
 
 	"encoding/json"
@@ -83,7 +82,7 @@ func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
 func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
     metrics := stor.ToMetrics()
     delta := int64(1)
-    metrics = append(metrics, myjson.Metric{ID:"PollCount",MType: "counter", Delta: &delta})
+    metrics = append(metrics, storage.Metric{ID:"PollCount",MType: "counter", Delta: &delta})
 
     for _, m := range metrics {
         data, err := json.Marshal(m)
@@ -97,14 +96,9 @@ func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
             return err
         }
 
-        backoffSchedule := []time.Duration{
-          100 * time.Millisecond,
-          500 * time.Millisecond,
-          1 * time.Second,
-        }
 
         var res *resty.Response
-        for _, backoff := range backoffSchedule {
+        for _, backoff := range envVars.BackoffSchedule {
 
             res, err = client.R().
                             SetHeader("Content-Type", "application/json").

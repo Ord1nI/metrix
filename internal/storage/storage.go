@@ -5,8 +5,6 @@ import (
 	"errors"
 	"os"
 	"reflect"
-
-	"github.com/Ord1nI/metrix/internal/myjson"
 )
 
 type Adder interface {
@@ -17,22 +15,9 @@ type Getter  interface {
     Get(name string, val interface{}) (error)
 }
 
-type MetricAdder interface {
-    AddMetric(myjson.Metric) error
-}
-type MetricGetter interface {
-    GetMetric(string, string) (*myjson.Metric, bool)
-}
-
-
 type MetricGetAdder interface {
-    MetricAdder
-    MetricGetter
-}
-
-type GetAdder interface {
-    Adder
-    Getter
+    AddMetric(Metric) error
+    GetMetric(string, string) (*Metric, bool)
 }
 
 type MemStorage struct{
@@ -59,7 +44,7 @@ func (m *MemStorage) Add(name string, val interface{}) error {
     return errors.New("incorect metric type")
 }
 
-func (m *MemStorage)AddMetric(metric myjson.Metric) error{
+func (m *MemStorage)AddMetric(metric Metric) error{
     if metric.ID == "" {
         return errors.New("metric must hame name")
     }
@@ -74,7 +59,7 @@ func (m *MemStorage)AddMetric(metric myjson.Metric) error{
     return errors.New("bad type")
 }
 
-func (m *MemStorage)GetMetric(name, mType string) (*myjson.Metric, bool){
+func (m *MemStorage)GetMetric(name, mType string) (*Metric, bool){
     switch mType {
     case "gauge":
         val, ok := m.Gauge.Get(name)
@@ -84,10 +69,10 @@ func (m *MemStorage)GetMetric(name, mType string) (*myjson.Metric, bool){
             return nil, false
         }
 
-        mj := myjson.Metric{
-            ID:name,
-            MType:mType,
-            Value:&fval,
+        mj := Metric{
+            ID : name,
+            MType : mType,
+            Value : &fval,
         }
         return &mj, true
 
@@ -99,7 +84,7 @@ func (m *MemStorage)GetMetric(name, mType string) (*myjson.Metric, bool){
             return nil, false
         }
 
-        mj := myjson.Metric{
+        mj := Metric{
             ID:name,
             MType:mType,
             Delta:&ival,
@@ -150,7 +135,7 @@ func (m *MemStorage) MarshalJSON() ([]byte, error){
 }
 
 func (m *MemStorage) UnmarshalJSON(d []byte) error {
-    var metrics []myjson.Metric
+    var metrics []Metric
 
     err := json.Unmarshal(d, &metrics)
 
@@ -165,7 +150,7 @@ func (m *MemStorage) UnmarshalJSON(d []byte) error {
     return nil
 }
 
-func (m *MemStorage) ToMetrics() ([]myjson.Metric){
+func (m *MemStorage) ToMetrics() ([]Metric){
     jm := m.Gauge.ToMetrics()
     jm = append(jm, m.Counter.ToMetrics()...)
     return jm

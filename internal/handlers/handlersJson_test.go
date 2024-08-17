@@ -13,13 +13,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Ord1nI/metrix/internal/myjson"
+	"github.com/Ord1nI/metrix/internal/storage"
 )
 
-func (s *storageMock) AddMetric(m myjson.Metric) error{
+func (s *storageMock) AddMetric(m storage.Metric) error{
+
     if m.ID == "" {
         return errors.New("error")
     }
+     
     if m.MType == "counter" {
         if s.mtype == "counter" {
             s.val += float64(*m.Delta)
@@ -32,6 +34,7 @@ func (s *storageMock) AddMetric(m myjson.Metric) error{
             return nil
         }
     }
+
     if m.MType == "gauge" {
         s.val = float64(*m.Value)
         s.name = m.ID
@@ -41,18 +44,18 @@ func (s *storageMock) AddMetric(m myjson.Metric) error{
     return errors.New("error")
 }
 
-func (s *storageMock) GetMetric(name, t  string) (*myjson.Metric, bool) {
+func (s *storageMock) GetMetric(name, t  string) (*storage.Metric, bool) {
     if name == s.name {
         switch t{
         case "counter":
             v := int64(s.val)
-            return &myjson.Metric{
+            return &storage.Metric{
                 ID: name,
                 MType: t,
                 Delta: &v,
             },true
         case "gauge":
-            return &myjson.Metric{
+            return &storage.Metric{
                 ID: name,
                 MType: t,
                 Value: &s.val,
@@ -84,16 +87,16 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
     type want struct {
         code int
         response string
-        responseM myjson.Metric
+        responseM storage.Metric
     }
     tests := []struct{
         name string
-        metric myjson.Metric
+        metric storage.Metric
         want want
     }{
         {
             name: "Test badReq",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "name",
                 MType: "",
                 Delta:ptrToInt(213),
@@ -105,7 +108,7 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
         },
         {
             name: "Test badReq2",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "",
                 MType: "counter",
                 Delta:ptrToInt(213),
@@ -117,14 +120,14 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
         },
         {
             name: "test gauge",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "gauge",
                 MType: "gauge",
                 Value:ptrToFloat(213),
             },
             want: want{
                 code: http.StatusOK,
-                responseM: myjson.Metric{
+                responseM: storage.Metric{
                     ID: "gauge",
                     MType: "gauge",
                     Value:ptrToFloat(213),
@@ -133,14 +136,14 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
         },
         {
             name: "test counter",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "counter",
                 MType: "counter",
                 Delta:ptrToInt(1),
             },
             want: want{
                 code: http.StatusOK,
-                responseM: myjson.Metric{
+                responseM: storage.Metric{
                     ID: "counter",
                     MType: "counter",
                     Delta:ptrToInt(1),
@@ -149,14 +152,14 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
         },
         {
             name: "test counter2",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "counter",
                 MType: "counter",
                 Delta:ptrToInt(1),
             },
             want: want{
                 code: http.StatusOK,
-                responseM: myjson.Metric{
+                responseM: storage.Metric{
                     ID: "counter",
                     MType: "counter",
                     Delta:ptrToInt(2),
@@ -165,14 +168,14 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
         },
         {
             name: "test gauge2",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID: "gauge",
                 MType: "gauge",
                 Value:ptrToFloat(213),
             },
             want: want{
                 code: http.StatusOK,
-                responseM: myjson.Metric{
+                responseM: storage.Metric{
                     ID: "gauge",
                     MType: "gauge",
                     Value:ptrToFloat(213),
@@ -201,7 +204,7 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
             res := w.Result()
 
             if res.Header.Get("Content-Type") == "application/json" {
-                var j myjson.Metric
+                var j storage.Metric
 
                 err = json.NewDecoder(res.Body).Decode(&j)
 
@@ -226,16 +229,16 @@ func TGetJSON(t *testing.T, r chi.Router) {
     type want struct {
         code int
         response string
-        responseM myjson.Metric
+        responseM storage.Metric
     }
     tests := []struct{
         name string
-        metric myjson.Metric
+        metric storage.Metric
         want want
     }{
         {
             name: "Test badReq",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID:"some name",
                 MType: "gauge",
             },
@@ -246,13 +249,13 @@ func TGetJSON(t *testing.T, r chi.Router) {
         },
         {
             name: "test gauge",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID:"gauge",
                 MType:"gauge",
             },
             want: want{
                 code: http.StatusOK,
-                responseM: myjson.Metric{
+                responseM: storage.Metric{
                     ID: "gauge",
                     MType: "gauge",
                     Value:ptrToFloat(213),
@@ -261,13 +264,13 @@ func TGetJSON(t *testing.T, r chi.Router) {
         },
         {
             name: "test counter",
-            metric:myjson.Metric{
+            metric:storage.Metric{
                 ID:"counter",
                 MType: "counter",
             },
             want: want{
                 code: http.StatusOK,
-                responseM: myjson.Metric{
+                responseM: storage.Metric{
                     ID: "counter",
                     MType: "counter",
                     Delta:ptrToInt(2),
@@ -276,13 +279,13 @@ func TGetJSON(t *testing.T, r chi.Router) {
         },
         {
             name: "test gauge2",
-            metric: myjson.Metric{
+            metric: storage.Metric{
                 ID:"gauge",
                 MType:"gauge",
             },
             want: want{
                 code: http.StatusOK,
-                responseM: myjson.Metric{
+                responseM: storage.Metric{
                     ID: "gauge",
                     MType: "gauge",
                     Value:ptrToFloat(213),
@@ -309,7 +312,7 @@ func TGetJSON(t *testing.T, r chi.Router) {
             res := w.Result()
 
             if res.Header.Get("Content-Type") == "application/json" {
-                var j myjson.Metric
+                var j storage.Metric
 
                 err = json.NewDecoder(res.Body).Decode(&j)
 
