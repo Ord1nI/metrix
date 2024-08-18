@@ -7,7 +7,7 @@ import (
 
 func PingDB(db *sql.DB) http.Handler{
     hf := func(res http.ResponseWriter, req *http.Request) {
-        err := db.Ping()
+        err := db.PingContext(req.Context())
 
         if err != nil {
             http.Error(res, err.Error(), http.StatusInternalServerError)
