@@ -52,11 +52,13 @@ func main() {
 
     stor := storage.NewMemStorage()
 
-    db, err := sql.Open("pgx", config.DBdns) 
+    db, err := sql.Open("pgx", config.DBdsn) 
 
     if err != nil {
         sugar.Fatal(err)
     }
+
+    defer db.Close()
 
 
     if config.FileStoragePath != "" && config.Restore {

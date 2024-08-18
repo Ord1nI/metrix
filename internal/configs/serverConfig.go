@@ -12,7 +12,7 @@ type ServerConfig struct {
     StoreInterval int `env:"STORE_INTERVAL" envDefault:"300"`  //envvar $STORE_INTERVAL or envDefault
     FileStoragePath string `env:"FILE_STORAGE_PATH"`           //envvar $FILE_STORAGE or envDefault
     Restore bool `env:"RESTORE" envDefault:"true"`             //envvar $RESTORE or envDefault
-    DBdns string `env:"DATABASE_DNS"`
+    DBdsn string `env:"DATABASE_DSN"`
 } 
 
 func ServerGetConf(sugar logger.Logger, envVars *ServerConfig) {
@@ -30,7 +30,7 @@ func ServerGetConf(sugar logger.Logger, envVars *ServerConfig) {
         "enter path to file where all data will be saved")
     var fRestore = flag.Bool("r", envVars.Restore,
         "whether or not load data to specified file")
-    var fDatabase = flag.String("d", envVars.DBdns, 
+    var fDatabase = flag.String("d", envVars.DBdsn, 
         "e.g.host=hostname user=username password=pssword dbname=dbname")
 
     flag.Parse()
@@ -47,7 +47,7 @@ func ServerGetConf(sugar logger.Logger, envVars *ServerConfig) {
     if envVars.Restore {
         envVars.Restore = *fRestore
     }
-    if envVars.DBdns == "" {
-        envVars.DBdns = *fDatabase
+    if envVars.DBdsn == "" {
+        envVars.DBdsn = *fDatabase
     }
 }
