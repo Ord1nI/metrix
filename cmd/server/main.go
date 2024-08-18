@@ -36,17 +36,13 @@ func initF() {
 
 func initRepo() repo.Repo{
     db, err := database.NewDB(context.TODO(),config.DBdsn)
+    err = db.Db.Ping()
     if err != nil {
         sugar.Error("Fail to connect to database creating memstorage")
         memStor := storage.NewMemStorage()
 
         if config.StoreInterval != 0 && config.FileStoragePath != "" {
-            go memStor.StartDataSaver(config.StoreInterval, config.FileStoragePath)
-            if err != nil {
-                sugar.Error("fail to enable file saving")
-            } else {
-                sugar.Info("Successfuly enable file saving")
-            }
+            go memStor.StartDataSaver(config.StoreInterval, config.FileStoragePath) //add error check
         }
         return memStor
     } else {
@@ -66,9 +62,8 @@ func main() {
 
 
 
-    var r chi.Router
 
-    r = CreateRouter(stor, 
+    r := CreateRouter(stor, 
         logger.HandlerLogging(sugar), 
         compressor.GzipMiddleware(sugar))
 
