@@ -40,7 +40,17 @@ func initRepo() repo.Repo{
         sugar.Error("Fail to connect to database creating memstorage")
         memStor := storage.NewMemStorage()
 
+        if config.Restore == true && config.FileStoragePath != "" {
+            err = memStor.GetFromFile(config.FileStoragePath)
+            if err != nil {
+                sugar.Infoln("unable to load data from file")
+            } else {
+                sugar.Infoln("successfuly load data from file")
+            }
+        }
+
         if config.StoreInterval != 0 && config.FileStoragePath != "" {
+            sugar.Infoln("Starting saving to file")
             go memStor.StartDataSaver(config.StoreInterval, config.FileStoragePath) //add error check
         }
         return memStor
