@@ -54,7 +54,7 @@ func main() {
     stor := storage.NewMemStorage()
 
     db, err := sql.Open("pgx", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-                      `localhost`, config.Database.User, config.Database.Password, config.Database.Name))
+                      config.Database.Host, config.Database.User, config.Database.Password, config.Database.Name))
 
     if err != nil {
         sugar.Fatal(err)
