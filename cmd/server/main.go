@@ -3,8 +3,11 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+    _ "github.com/jackc/pgx/v5/stdlib"
 
+    "database/sql"
 	"net/http"
+    "fmt"
 	"time"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
@@ -50,6 +53,14 @@ func main() {
 
     stor := storage.NewMemStorage()
 
+    db, err := sql.Open("pgx", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
+                      `localhost`, config.Database.User, config.Database.Password, config.Database.Name))
+
+    if err != nil {
+        sugar.Fatal(err)
+    }
+
+
     if config.FileStoragePath != "" && config.Restore {
         err := stor.GetFromFile(config.FileStoragePath)
         if err != nil {
@@ -62,12 +73,13 @@ func main() {
     var r chi.Router
 
     if config.StoreInterval == 0 {
-        r = CreateRouter(stor,
+        r = CreateRouter(db, stor,
             logger.HandlerLogging(sugar), 
             compressor.GzipMiddleware(sugar), 
             storage.SaveToFileMW(sugar,config.FileStoragePath,stor))
+
     } else {
-        r = CreateRouter(stor, 
+        r = CreateRouter(db, stor, 
             logger.HandlerLogging(sugar), 
             compressor.GzipMiddleware(sugar))
     }

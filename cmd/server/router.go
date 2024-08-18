@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"net/http"
+    "database/sql"
 
 	"github.com/Ord1nI/metrix/internal/handlers"
 	"github.com/Ord1nI/metrix/internal/storage"
@@ -52,7 +53,7 @@ func valueCounterRoute(stor storage.Getter) func(r chi.Router){
     }
 }
 
-func CreateRouter(stor *storage.MemStorage, middlewares ...func(http.Handler)http.Handler) *chi.Mux{
+func CreateRouter(db *sql.DB, stor *storage.MemStorage, middlewares ...func(http.Handler)http.Handler) *chi.Mux{
 
     r := chi.NewRouter()
 
@@ -63,6 +64,8 @@ func CreateRouter(stor *storage.MemStorage, middlewares ...func(http.Handler)htt
 
     // GET /
     r.Method(http.MethodGet, "/", handlers.MainPage(stor))                  
+
+    r.Method(http.MethodGet, "/ping", handlers.PingDB(db))                  
 
     r.Route("/update", func(r chi.Router) {
         r.Method(http.MethodPost, "/", handlers.UpdateJSON(stor))
