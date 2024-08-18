@@ -7,7 +7,6 @@ import (
 
     "database/sql"
 	"net/http"
-    "fmt"
 	"time"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
@@ -53,8 +52,7 @@ func main() {
 
     stor := storage.NewMemStorage()
 
-    db, err := sql.Open("pgx", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-                      config.Database.Host, config.Database.User, config.Database.Password, config.Database.Name))
+    db, err := sql.Open("pgx", config.DBdns) 
 
     if err != nil {
         sugar.Fatal(err)
