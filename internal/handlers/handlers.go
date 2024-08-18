@@ -11,11 +11,13 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/Ord1nI/metrix/internal/storage"
+	"github.com/Ord1nI/metrix/internal/repo/metrics"
+	"github.com/Ord1nI/metrix/internal/repo"
+	"github.com/Ord1nI/metrix/internal/logger"
 )
 
 
-func UpdateGauge(s storage.Adder) http.Handler {
+func UpdateGauge(l logger.Logger,s repo.Adder) http.Handler {
     fHandler := func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req, "name")
         v := chi.URLParam(req, "val")
@@ -23,17 +25,18 @@ func UpdateGauge(s storage.Adder) http.Handler {
         val,err := strconv.ParseFloat(v, 64)
 
         if err != nil {
-            http.Error(res, "Incorect metric value", http.StatusBadRequest)
+            l.Errorln(err)
+            http.Error(res, err.Error(), http.StatusBadRequest)
             return
         }
 
-        s.Add(name, storage.Gauge(val))
+        s.Add(name, metrics.Gauge(val))
         res.WriteHeader(http.StatusOK)
     }
     return http.HandlerFunc(fHandler)
 }
 
-func UpdateCounter(s storage.Adder) http.Handler{
+func UpdateCounter(l logger.Logger, s repo.Adder) http.Handler{
     fHandler := func(res http.ResponseWriter, req *http.Request) {
 
         name := chi.URLParam(req, "name")
@@ -42,24 +45,26 @@ func UpdateCounter(s storage.Adder) http.Handler{
         val, err := strconv.ParseInt(v, 10, 64)
 
         if err != nil {
-            http.Error(res, "Incorect metric value", http.StatusBadRequest)
+            l.Errorln(err)
+            http.Error(res, err.Error(), http.StatusBadRequest)
             return
         }
 
-        s.Add(name, storage.Counter(val))
+        s.Add(name, metrics.Counter(val))
         res.WriteHeader(http.StatusOK)
     }
     return http.HandlerFunc(fHandler)
 }
 
-func GetGauge(s storage.Getter) http.Handler {
+func GetGauge(l logger.Logger,s repo.Getter) http.Handler {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
-        var v storage.Gauge
+        var v metrics.Gauge
         err := s.Get(name, &v)
 
         if err != nil {
-            http.Error(res, "Unknown metric", http.StatusNotFound)
+            l.Errorln(err)
+            http.Error(res, err.Error(), http.StatusNotFound)
             return
         }
 
@@ -70,15 +75,16 @@ func GetGauge(s storage.Getter) http.Handler {
     return http.HandlerFunc(fHandler)
 }
 
-func GetCounter(s storage.Getter) http.Handler {
+func GetCounter(l logger.Logger, s repo.Getter) http.Handler {
 
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         name := chi.URLParam(req,"name")
-        var v storage.Counter
+        var v metrics.Counter
         err := s.Get(name, &v)
 
         if err != nil {
-            http.Error(res, "Unknown metric", http.StatusNotFound)
+            l.Errorln(err)
+            http.Error(res, err.Error(), http.StatusNotFound)
             return
         }
 
@@ -88,24 +94,27 @@ func GetCounter(s storage.Getter) http.Handler {
     }
     return http.HandlerFunc(fHandler)
 }
-func MainPage(m json.Marshaler) http.Handler {
+
+func MainPage(l logger.Logger, m json.Marshaler) http.Handler {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
-        var metricArr []storage.Metric
+        var metricArr []metrics.Metric
 
         data, err := json.Marshal(m)
 
         if err != nil {
-            http.Error(res, "error", http.StatusNotFound)
+            l.Errorln(err)
+            http.Error(res, err.Error(), http.StatusNotFound)
         }
 
         err = json.Unmarshal(data, &metricArr)
 
         if err != nil {
+            l.Errorln(err)
             http.Error(res, "couldn't unmarshal", http.StatusNotFound)
         }
 
-        slices.SortStableFunc(metricArr, func(a,b storage.Metric) int {
+        slices.SortStableFunc(metricArr, func(a,b metrics.Metric) int {
             return cmp.Compare(a.ID, b.ID)})
 
         var html bytes.Buffer

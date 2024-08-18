@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+    "github.com/Ord1nI/metrix/internal/repo/metrics"
 )
 
 func TestAddGauge(t *testing.T) {
     tests := []struct{
         name string
-        val Gauge
+        val metrics.Gauge
     }{
         {
         name:"test",
@@ -48,7 +49,7 @@ func TestAddGauge(t *testing.T) {
 func TestAddCounter(t *testing.T) {
     tests := []struct{
         name string
-        val Counter
+        val metrics.Counter
     }{
         {
         name:"test",
@@ -84,7 +85,7 @@ func TestAddCounter(t *testing.T) {
 func TestGetGeoge(t *testing.T) {
     tests := []struct{
         name string
-        val Gauge
+        val metrics.Gauge
     }{
         {
         name:"test",
@@ -113,7 +114,7 @@ func TestGetGeoge(t *testing.T) {
     for _, test := range tests {
         t.Run(test.name, func(t*testing.T){
         stor.Gauge.Add(test.name, test.val)
-        var v Gauge
+        var v metrics.Gauge
         err := stor.Get(test.name, &v)
         assert.Equal(t, test.val, v)
         assert.Equal(t, nil, err)
@@ -123,7 +124,7 @@ func TestGetGeoge(t *testing.T) {
 func TestGetCounter(t *testing.T) {
     tests := []struct{
         name string
-        val Counter
+        val metrics.Counter
     }{
         {
         name:"test",
@@ -152,7 +153,7 @@ func TestGetCounter(t *testing.T) {
     for _, test := range tests {
         t.Run(test.name, func(t*testing.T){
         stor.Counter.Add(test.name, test.val)
-        var v Counter
+        var v metrics.Counter
         err := stor.Get(test.name, &v)
         assert.Equal(t, test.val, v)
         assert.Equal(t, nil, err)

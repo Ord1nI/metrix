@@ -1,7 +1,9 @@
 package handlers
 
 import (
-	"github.com/Ord1nI/metrix/internal/storage"
+	"github.com/Ord1nI/metrix/internal/repo/metrics"
+	"github.com/Ord1nI/metrix/internal/logger"
+	"github.com/Ord1nI/metrix/internal/repo"
 
 	"encoding/json"
 	"fmt"
@@ -9,7 +11,7 @@ import (
 	"net/http"
 )
 
-func UpdateJSON(s storage.MetricGetAdder) http.Handler{
+func UpdateJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
         if req.Header.Get("Content-Type") != "application/json" {
@@ -22,17 +24,19 @@ func UpdateJSON(s storage.MetricGetAdder) http.Handler{
         req.Body.Close()
 
         if err != nil {
+            l.Errorln(err)
             res.WriteHeader(http.StatusBadRequest)
             res.Write([]byte("Bad rquest body\n"))
             return
         }
 
-        var metric storage.Metric
+        var metric metrics.Metric
 
         err = json.Unmarshal(data, &metric)
 
 
         if err != nil {
+            l.Errorln(err)
             res.WriteHeader(http.StatusBadRequest)
             res.Write([]byte("Cant unmarshal json\n"))
             return
@@ -41,6 +45,7 @@ func UpdateJSON(s storage.MetricGetAdder) http.Handler{
         err = s.AddMetric(metric)
 
         if err != nil {
+            l.Errorln(err)
             res.WriteHeader(http.StatusBadRequest)
             res.Write([]byte(fmt.Sprint(err)))
             return
@@ -58,7 +63,7 @@ func UpdateJSON(s storage.MetricGetAdder) http.Handler{
     return http.HandlerFunc(fHandler)
 }
 
-func GetJSON(s storage.MetricGetAdder) http.Handler {
+func GetJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
         if req.Header.Get("Content-Type") != "application/json" {
@@ -71,15 +76,17 @@ func GetJSON(s storage.MetricGetAdder) http.Handler {
         req.Body.Close()
 
         if err != nil {
+            l.Errorln(err)
             res.WriteHeader(http.StatusBadRequest)
             res.Write([]byte("Bad rquest body\n"))
             return
         }
 
-        var metric storage.Metric
+        var metric metrics.Metric
         err = json.Unmarshal(data, &metric)
 
         if err != nil {
+            l.Errorln(err)
             res.WriteHeader(http.StatusBadRequest)
             res.Write([]byte("Cant unmarshal json\n"))
             return

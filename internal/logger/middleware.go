@@ -1,13 +1,11 @@
 package logger
 
 import (
-	"go.uber.org/zap"
-
 	"net/http"
 	"time"
 )
 
-func HandlerLogging(logger *zap.SugaredLogger) func(http.Handler) http.Handler{
+func HandlerLogging(logger Logger) func(http.Handler) http.Handler{
     return func(h http.Handler) http.Handler{
         logFn := func(w http.ResponseWriter, r *http.Request) {
             start := time.Now()

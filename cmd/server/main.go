@@ -3,15 +3,15 @@ package main
 import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
-    _ "github.com/jackc/pgx/v5/stdlib"
 
-    "database/sql"
 	"net/http"
-	"time"
+    "context"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
 	"github.com/Ord1nI/metrix/internal/logger"
-	"github.com/Ord1nI/metrix/internal/storage"
+	"github.com/Ord1nI/metrix/internal/repo/storage"
+	"github.com/Ord1nI/metrix/internal/repo/database"
+	"github.com/Ord1nI/metrix/internal/repo"
     "github.com/Ord1nI/metrix/internal/configs"
 )
 
@@ -20,18 +20,6 @@ var config configs.ServerConfig
 
 var sugar *zap.SugaredLogger
 
-
-func StartDataSaver(s *storage.MemStorage) {
-    for {
-        time.Sleep(time.Duration(config.StoreInterval) * time.Second)
-        err := s.WriteToFile(config.FileStoragePath)
-        if err != nil {
-            sugar.Fatal(err)
-        } else {
-            sugar.Info("Data saved")
-        }
-    }
-}
 
 func initF() {
     log, err := logger.NewLogger()
@@ -46,48 +34,43 @@ func initF() {
     sugar.Info("Config vars: ", config)
 }
 
+func initRepo() repo.Repo{
+    db, err := database.NewDB(context.TODO(),config.DBdsn)
+    if err != nil {
+        sugar.Error("Fail to connect to database creating memstorage")
+        memStor := storage.NewMemStorage()
+
+        if config.StoreInterval != 0 && config.FileStoragePath != "" {
+            go memStor.StartDataSaver(config.StoreInterval, config.FileStoragePath)
+            if err != nil {
+                sugar.Error("fail to enable file saving")
+            } else {
+                sugar.Info("Successfuly enable file saving")
+            }
+        }
+        return memStor
+    } else {
+        sugar.Infoln("Database loaded successfuly")
+        err = db.CreateTable()
+        sugar.Errorln(err)
+        return db
+    }
+}
+
 func main() {
 
     initF()
 
-    stor := storage.NewMemStorage()
-
-    db, err := sql.Open("pgx", config.DBdsn) 
-
-    if err != nil {
-        sugar.Fatal(err)
-    }
-
-    defer db.Close()
+    stor := initRepo()
+    defer stor.Close()
 
 
-    if config.FileStoragePath != "" && config.Restore {
-        err := stor.GetFromFile(config.FileStoragePath)
-        if err != nil {
-            sugar.Info(err)
-        } else {
-            sugar.Info("Data loaded succesful",stor.Gauge)
-        }
-    }
 
     var r chi.Router
 
-    if config.StoreInterval == 0 {
-        r = CreateRouter(db, stor,
-            logger.HandlerLogging(sugar), 
-            compressor.GzipMiddleware(sugar), 
-            storage.SaveToFileMW(sugar,config.FileStoragePath,stor))
-
-    } else {
-        r = CreateRouter(db, stor, 
-            logger.HandlerLogging(sugar), 
-            compressor.GzipMiddleware(sugar))
-    }
-
-    if  config.FileStoragePath != "" && 
-        config.StoreInterval != 0 {
-            go StartDataSaver(stor)
-    }
+    r = CreateRouter(stor, 
+        logger.HandlerLogging(sugar), 
+        compressor.GzipMiddleware(sugar))
 
     http.ListenAndServe(config.Address, r)
 }

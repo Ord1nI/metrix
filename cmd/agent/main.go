@@ -7,7 +7,7 @@ import (
     "time"
 
 	"github.com/Ord1nI/metrix/internal/logger"
-	"github.com/Ord1nI/metrix/internal/storage"
+	"github.com/Ord1nI/metrix/internal/repo/storage"
 	"github.com/Ord1nI/metrix/internal/configs"
 )
 

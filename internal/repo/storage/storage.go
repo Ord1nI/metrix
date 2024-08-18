@@ -5,20 +5,10 @@ import (
 	"errors"
 	"os"
 	"reflect"
+    "time"
+
+    "github.com/Ord1nI/metrix/internal/repo/metrics"
 )
-
-type Adder interface {
-    Add(name string, val interface{}) (error)
-}
-
-type Getter  interface {
-    Get(name string, val interface{}) (error)
-}
-
-type MetricGetAdder interface {
-    AddMetric(Metric) error
-    GetMetric(string, string) (*Metric, bool)
-}
 
 type MemStorage struct{
     Gauge *MGauge
@@ -34,32 +24,32 @@ func NewMemStorage() *MemStorage{
 
 func (m *MemStorage) Add(name string, val interface{}) error {
     switch val := val.(type) {
-    case Gauge:
+    case metrics.Gauge:
         m.Gauge.Add(name, val)
         return nil
-    case Counter:
+    case metrics.Counter:
         m.Counter.Add(name, val)
         return nil
     }
     return errors.New("incorect metric type")
 }
 
-func (m *MemStorage)AddMetric(metric Metric) error{
+func (m *MemStorage)AddMetric(metric metrics.Metric) error{
     if metric.ID == "" {
         return errors.New("metric must hame name")
     }
     switch metric.MType {
     case "gauge":
-        m.Gauge.Add(metric.ID, Gauge(*metric.Value))
+        m.Gauge.Add(metric.ID, metrics.Gauge(*metric.Value))
         return nil
     case "counter":
-        m.Counter.Add(metric.ID, Counter(*metric.Delta))
+        m.Counter.Add(metric.ID, metrics.Counter(*metric.Delta))
         return nil
     }
     return errors.New("bad type")
 }
 
-func (m *MemStorage)GetMetric(name, mType string) (*Metric, bool){
+func (m *MemStorage)GetMetric(name, mType string) (*metrics.Metric, bool){
     switch mType {
     case "gauge":
         val, ok := m.Gauge.Get(name)
@@ -69,7 +59,7 @@ func (m *MemStorage)GetMetric(name, mType string) (*Metric, bool){
             return nil, false
         }
 
-        mj := Metric{
+        mj := metrics.Metric{
             ID : name,
             MType : mType,
             Value : &fval,
@@ -84,7 +74,7 @@ func (m *MemStorage)GetMetric(name, mType string) (*Metric, bool){
             return nil, false
         }
 
-        mj := Metric{
+        mj := metrics.Metric{
             ID:name,
             MType:mType,
             Delta:&ival,
@@ -135,7 +125,7 @@ func (m *MemStorage) MarshalJSON() ([]byte, error){
 }
 
 func (m *MemStorage) UnmarshalJSON(d []byte) error {
-    var metrics []Metric
+    var metrics []metrics.Metric
 
     err := json.Unmarshal(d, &metrics)
 
@@ -150,7 +140,7 @@ func (m *MemStorage) UnmarshalJSON(d []byte) error {
     return nil
 }
 
-func (m *MemStorage) ToMetrics() ([]Metric){
+func (m *MemStorage) ToMetrics() ([]metrics.Metric){
     jm := m.Gauge.ToMetrics()
     jm = append(jm, m.Counter.ToMetrics()...)
     return jm
@@ -190,3 +180,19 @@ func (m *MemStorage) GetFromFile(f string) (error) {
 
     return nil
 }
+
+func (m *MemStorage) Close() error {
+    return nil
+}
+
+func (m *MemStorage)StartDataSaver(StoreInterval int, FileStoragePath string) error{
+    for {
+        time.Sleep(time.Duration(StoreInterval) * time.Second)
+        err := m.WriteToFile(FileStoragePath)
+        if err != nil {
+            return err
+        }
+        return nil
+    }
+}
+

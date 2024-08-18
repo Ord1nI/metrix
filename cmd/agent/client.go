@@ -4,7 +4,8 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
-	"github.com/Ord1nI/metrix/internal/storage"
+	"github.com/Ord1nI/metrix/internal/repo/metrics"
+	"github.com/Ord1nI/metrix/internal/repo/storage"
 
 	"encoding/json"
 	"errors"
@@ -21,34 +22,34 @@ func collectMetrics(stor *storage.MemStorage) {
     var mS runtime.MemStats
     runtime.ReadMemStats(&mS)
     mGauge  := storage.MGauge{
-        "Alloc" : storage.Gauge(mS.Alloc),
-        "BuckHashSys" : storage.Gauge(mS.BuckHashSys),
-        "Frees" : storage.Gauge(mS.Frees),
-        "GCCPUFraction" : storage.Gauge(mS.GCCPUFraction),
-        "GCSys" : storage.Gauge(mS.GCSys),
-        "HeapAlloc" : storage.Gauge(mS.HeapAlloc),
-        "HeapIdle" : storage.Gauge(mS.HeapIdle),
-        "HeapInuse" : storage.Gauge(mS.HeapInuse),
-        "HeapObjects" : storage.Gauge(mS.HeapObjects),
-        "HeapReleased" : storage.Gauge(mS.HeapReleased),
-        "HeapSys" : storage.Gauge(mS.HeapSys),
-        "LastGC" : storage.Gauge(mS.LastGC),
-        "Lookups" : storage.Gauge(mS.Lookups),
-        "MCacheInuse" : storage.Gauge(mS.MCacheInuse),
-        "MCacheSys" : storage.Gauge(mS.MCacheSys),
-        "MSpanInuse" : storage.Gauge(mS.MSpanInuse),
-        "MSpanSys" : storage.Gauge(mS.MSpanSys),
-        "Mallocs" : storage.Gauge(mS.Mallocs),
-        "NextGC" : storage.Gauge(mS.NextGC),
-        "NumForcedGC" : storage.Gauge(mS.NumForcedGC),
-        "NumGC" : storage.Gauge(mS.NumGC),
-        "OtherSys" : storage.Gauge(mS.OtherSys),
-        "PauseTotalNs" : storage.Gauge(mS.PauseTotalNs),
-        "StackInuse" : storage.Gauge(mS.StackInuse),
-        "StackSys" : storage.Gauge(mS.StackSys),
-        "Sys" : storage.Gauge(mS.Sys),
-        "TotalAlloc" : storage.Gauge(mS.TotalAlloc),
-        "RandomValue" : storage.Gauge(rand.Float64()),
+        "Alloc" : metrics.Gauge(mS.Alloc),
+        "BuckHashSys" : metrics.Gauge(mS.BuckHashSys),
+        "Frees" : metrics.Gauge(mS.Frees),
+        "GCCPUFraction" : metrics.Gauge(mS.GCCPUFraction),
+        "GCSys" : metrics.Gauge(mS.GCSys),
+        "HeapAlloc" : metrics.Gauge(mS.HeapAlloc),
+        "HeapIdle" : metrics.Gauge(mS.HeapIdle),
+        "HeapInuse" : metrics.Gauge(mS.HeapInuse),
+        "HeapObjects" : metrics.Gauge(mS.HeapObjects),
+        "HeapReleased" : metrics.Gauge(mS.HeapReleased),
+        "HeapSys" : metrics.Gauge(mS.HeapSys),
+        "LastGC" : metrics.Gauge(mS.LastGC),
+        "Lookups" : metrics.Gauge(mS.Lookups),
+        "MCacheInuse" : metrics.Gauge(mS.MCacheInuse),
+        "MCacheSys" : metrics.Gauge(mS.MCacheSys),
+        "MSpanInuse" : metrics.Gauge(mS.MSpanInuse),
+        "MSpanSys" : metrics.Gauge(mS.MSpanSys),
+        "Mallocs" : metrics.Gauge(mS.Mallocs),
+        "NextGC" : metrics.Gauge(mS.NextGC),
+        "NumForcedGC" : metrics.Gauge(mS.NumForcedGC),
+        "NumGC" : metrics.Gauge(mS.NumGC),
+        "OtherSys" : metrics.Gauge(mS.OtherSys),
+        "PauseTotalNs" : metrics.Gauge(mS.PauseTotalNs),
+        "StackInuse" : metrics.Gauge(mS.StackInuse),
+        "StackSys" : metrics.Gauge(mS.StackSys),
+        "Sys" : metrics.Gauge(mS.Sys),
+        "TotalAlloc" : metrics.Gauge(mS.TotalAlloc),
+        "RandomValue" : metrics.Gauge(rand.Float64()),
     }
 
     stor.AddGauge(mGauge)
@@ -80,11 +81,11 @@ func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
 }
 
 func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
-    metrics := stor.ToMetrics()
+    metricArr := stor.ToMetrics()
     delta := int64(1)
-    metrics = append(metrics, storage.Metric{ID:"PollCount",MType: "counter", Delta: &delta})
+    metricArr = append(metricArr, metrics.Metric{ID:"PollCount",MType: "counter", Delta: &delta})
 
-    for _, m := range metrics {
+    for _, m := range metricArr {
         data, err := json.Marshal(m)
         if err != nil {
             return err
