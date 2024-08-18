@@ -15,9 +15,11 @@ import (
 )
 
 
-var config configs.ServerConfig
-
-var sugar *zap.SugaredLogger
+var (
+    config configs.ServerConfig
+    
+    sugar *zap.SugaredLogger
+)
 
 
 func initF() {
@@ -35,12 +37,11 @@ func initF() {
 
 func initRepo() repo.Repo{
     db, err := database.NewDB(context.TODO(),config.DBdsn)
-    err = db.Db.Ping()
-    if err != nil {
+    if err != nil && db.Db.Ping() != nil {
         sugar.Error("Fail to connect to database creating memstorage")
         memStor := storage.NewMemStorage()
 
-        if config.Restore == true && config.FileStoragePath != "" {
+        if config.Restore && config.FileStoragePath != "" {
             err = memStor.GetFromFile(config.FileStoragePath)
             if err != nil {
                 sugar.Infoln("unable to load data from file")
@@ -67,10 +68,8 @@ func main() {
     initF()
 
     stor := initRepo()
+
     defer stor.Close()
-
-
-
 
     r := CreateRouter(stor, 
         logger.HandlerLogging(sugar), 

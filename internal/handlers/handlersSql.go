@@ -25,7 +25,6 @@ func PingDB(l logger.Logger, r repo.Repo) http.Handler{
             }
         } 
         http.Error(res, "no database in use", http.StatusInternalServerError)
-        return
     }
     return http.HandlerFunc(hf)
 }

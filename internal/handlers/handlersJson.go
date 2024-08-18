@@ -6,7 +6,7 @@ import (
 	"github.com/Ord1nI/metrix/internal/repo"
 
 	"encoding/json"
-	"fmt"
+    "strings"
 	"io"
 	"net/http"
 )
@@ -14,9 +14,9 @@ import (
 func UpdateJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
-        if req.Header.Get("Content-Type") != "application/json" {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("not json request\n"))
+        if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
+            l.Infoln("Content Type doesn't contains application/json")
+            http.Error(res, "Not json request", http.StatusBadRequest)
             return
         }
 
@@ -24,9 +24,8 @@ func UpdateJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
         req.Body.Close()
 
         if err != nil {
-            l.Errorln(err)
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("Bad rquest body\n"))
+            l.Infoln(err)
+            http.Error(res, "Error while updating", http.StatusBadRequest)
             return
         }
 
@@ -36,24 +35,28 @@ func UpdateJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
 
 
         if err != nil {
-            l.Errorln(err)
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("Cant unmarshal json\n"))
+            l.Infoln(err)
+            http.Error(res, "Error while updating", http.StatusBadRequest)
             return
         }
 
         err = s.AddMetric(metric)
 
         if err != nil {
-            l.Errorln(err)
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte(fmt.Sprint(err)))
+            l.Infoln(err)
+            http.Error(res, "Error while updating", http.StatusBadRequest)
             return
         }
         
         ptrMetric, _ := s.GetMetric(metric.ID, metric.MType)
 
-        resMetric, _ := json.Marshal(ptrMetric) //maybe can be error
+        resMetric, err := json.Marshal(ptrMetric) //maybe can be error
+
+        if err != nil {
+            l.Infoln(err)
+            http.Error(res, "Error while updating", http.StatusBadRequest)
+            return
+        }
 
         res.Header().Add("Content-Type", "application/json" )
         res.WriteHeader(http.StatusOK)
@@ -67,8 +70,8 @@ func GetJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
         if req.Header.Get("Content-Type") != "application/json" {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("not json request\n"))
+            l.Infoln("Content Type doesn't contains application/json")
+            http.Error(res, "Not json request", http.StatusBadRequest)
             return
         }
 
@@ -76,9 +79,8 @@ func GetJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler {
         req.Body.Close()
 
         if err != nil {
-            l.Errorln(err)
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("Bad rquest body\n"))
+            l.Infoln(err)
+            http.Error(res, "Error while getting", http.StatusBadRequest)
             return
         }
 
@@ -86,21 +88,26 @@ func GetJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler {
         err = json.Unmarshal(data, &metric)
 
         if err != nil {
-            l.Errorln(err)
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("Cant unmarshal json\n"))
+            l.Infoln(err)
+            http.Error(res, "Error while gettings", http.StatusBadRequest)
             return
         }
 
         ptrMetric, ok := s.GetMetric(metric.ID, metric.MType)
 
         if !ok {
-            res.WriteHeader(http.StatusNotFound)
-            res.Write([]byte("Cant find this metric"))
+            l.Infoln("Metric not found")
+            http.Error(res, "Metric not found", http.StatusNotFound)
             return
         }
 
-        resMetric, _ := json.Marshal(ptrMetric) //maybe can be error
+        resMetric, err := json.Marshal(ptrMetric) //maybe can be error
+
+        if err != nil {
+            l.Infoln(err)
+            http.Error(res, "Error while gettings", http.StatusBadRequest)
+            return
+        }
 
         res.Header().Add("Content-Type", "application/json" )
         res.WriteHeader(http.StatusOK)

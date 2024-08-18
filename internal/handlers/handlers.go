@@ -25,8 +25,8 @@ func UpdateGauge(l logger.Logger,s repo.Adder) http.Handler {
         val,err := strconv.ParseFloat(v, 64)
 
         if err != nil {
-            l.Errorln(err)
-            http.Error(res, err.Error(), http.StatusBadRequest)
+            l.Infoln(err)
+            http.Error(res, "Error while updating", http.StatusBadRequest)
             return
         }
 
@@ -45,8 +45,8 @@ func UpdateCounter(l logger.Logger, s repo.Adder) http.Handler{
         val, err := strconv.ParseInt(v, 10, 64)
 
         if err != nil {
-            l.Errorln(err)
-            http.Error(res, err.Error(), http.StatusBadRequest)
+            l.Infoln(err)
+            http.Error(res, "Error while updating", http.StatusBadRequest)
             return
         }
 
@@ -63,8 +63,8 @@ func GetGauge(l logger.Logger,s repo.Getter) http.Handler {
         err := s.Get(name, &v)
 
         if err != nil {
-            l.Errorln(err)
-            http.Error(res, err.Error(), http.StatusNotFound)
+            l.Infoln(err)
+            http.Error(res, "Metric not found", http.StatusNotFound)
             return
         }
 
@@ -83,8 +83,8 @@ func GetCounter(l logger.Logger, s repo.Getter) http.Handler {
         err := s.Get(name, &v)
 
         if err != nil {
-            l.Errorln(err)
-            http.Error(res, err.Error(), http.StatusNotFound)
+            l.Infoln(err)
+            http.Error(res, "Metric not found", http.StatusNotFound)
             return
         }
 
@@ -103,15 +103,15 @@ func MainPage(l logger.Logger, m json.Marshaler) http.Handler {
         data, err := json.Marshal(m)
 
         if err != nil {
-            l.Errorln(err)
-            http.Error(res, err.Error(), http.StatusNotFound)
+            l.Infoln(err)
+            http.Error(res, "Error while loading main page", http.StatusNotFound)
         }
 
         err = json.Unmarshal(data, &metricArr)
 
         if err != nil {
-            l.Errorln(err)
-            http.Error(res, "couldn't unmarshal", http.StatusNotFound)
+            l.Infoln(err)
+            http.Error(res, "Error while loading main page", http.StatusNotFound)
         }
 
         slices.SortStableFunc(metricArr, func(a,b metrics.Metric) int {
