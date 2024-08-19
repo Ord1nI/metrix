@@ -58,7 +58,9 @@ func initRepo() repo.Repo{
     } else {
         sugar.Infoln("Database loaded successfuly")
         err = db.CreateTable()
-        sugar.Errorln(err)
+        if err != nil {
+            sugar.Errorln(err)
+        }
         return db
     }
 }

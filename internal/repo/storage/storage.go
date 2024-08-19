@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"reflect"
     "time"
 
     "github.com/Ord1nI/metrix/internal/repo/metrics"
@@ -30,6 +29,10 @@ func (m *MemStorage) Add(name string, val interface{}) error {
     case metrics.Counter:
         m.Counter.Add(name, val)
         return nil
+    case metrics.Metric:
+        return m.AddMetric(val)
+    case []metrics.Metric:
+        m.AddMetrics(val)
     }
     return errors.New("incorect metric type")
 }
@@ -42,6 +45,10 @@ func (m *MemStorage) Set(name string, val interface{}) error {
     case metrics.Counter:
         m.Counter.Set(name, val)
         return nil
+    //TODO
+    // case metrics.Metric:
+    //     m.SetMetric(metric)
+    //TODO
     }
     return errors.New("incorect metric type")
 }
@@ -59,6 +66,16 @@ func (m *MemStorage)AddMetric(metric metrics.Metric) error{
         return nil
     }
     return errors.New("bad type")
+}
+
+func (m *MemStorage)AddMetrics(met []metrics.Metric) error{
+    for _, v := range met {
+        err := m.AddMetric(v)
+        if err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 func (m *MemStorage)GetMetric(name, mType string) (*metrics.Metric, bool){
@@ -97,29 +114,31 @@ func (m *MemStorage)GetMetric(name, mType string) (*metrics.Metric, bool){
 }
 
 func (m *MemStorage) Get(name string, val interface{}) error{
-    v := reflect.ValueOf(val)
-    if v.Kind() == reflect.Pointer {
-        v = v.Elem()
-        switch v.Type().Name(){
-            case "Gauge":
-                val, ok := m.Gauge.Get(name)
-                if ok {
-                    v.SetFloat(float64(val))
-                    return nil
-                } else {
-                    return errors.New("no variable by this name")
-                }
-            case "Counter":
-                val, ok := m.Counter.Get(name)
-                if ok {
-                    v.SetInt(int64(val))
-                    return nil
-                } else {
-                    return errors.New("no variable by this name")
-                }
-            default:
-                return errors.New("incorect val type")
+    switch value := val.(type) {
+    case *metrics.Gauge:
+        v, ok := m.Gauge.Get(name)
+        if ok {
+            *value = v
+            return nil
         }
+        return errors.New("Metric not found")
+    case *metrics.Counter:
+        v, ok := m.Counter.Get(name)
+        if ok {
+            *value = v
+            return nil
+        }
+        return errors.New("Metric not found")
+    case *metrics.Metric:
+        v, ok := m.GetMetric(name, value.MType)
+        if ok {
+            *value = *v
+            return nil
+        }
+        return errors.New("Metric not found")
+    case *[]metrics.Metric:
+        *value = *m.toMetrics()
+        return nil
     }
     return errors.New("incorect val")
 }
@@ -152,10 +171,10 @@ func (m *MemStorage) UnmarshalJSON(d []byte) error {
     return nil
 }
 
-func (m *MemStorage) ToMetrics() ([]metrics.Metric){
+func (m *MemStorage) toMetrics() (*[]metrics.Metric){
     jm := m.Gauge.ToMetrics()
     jm = append(jm, m.Counter.ToMetrics()...)
-    return jm
+    return &jm
 }
 
 func (m *MemStorage) AddGauge(g MGauge) {

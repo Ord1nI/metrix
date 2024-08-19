@@ -82,7 +82,9 @@ func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
 }
 
 func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
-    metricArr := stor.ToMetrics()
+    var metricArr []metrics.Metric
+    stor.Get("", &metricArr)
+    sugar.Infoln(metricArr)
 
     for _, m := range metricArr {
         data, err := json.Marshal(m)

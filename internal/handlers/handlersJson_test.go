@@ -19,8 +19,15 @@ import (
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 )
 
-func (s *storageMock) AddMetric(m metrics.Metric) error{
+type storageMock2 struct{
+    val float64
+    name string
+    mtype string
+}
 
+func (s *storageMock2) Add(name string,v interface{}) error{
+
+    m := v.(metrics.Metric)
     if m.ID == "" {
         return errors.New("error")
     }
@@ -47,26 +54,28 @@ func (s *storageMock) AddMetric(m metrics.Metric) error{
     return errors.New("error")
 }
 
-func (s *storageMock) GetMetric(name, t  string) (*metrics.Metric, bool) {
+func (s *storageMock2) Get(name string, m interface{}) error {
+    t := m.(*metrics.Metric)
     if name == s.name {
-        switch t{
+        switch t.MType{
         case "counter":
             v := int64(s.val)
-            return &metrics.Metric{
+            *t = metrics.Metric{
                 ID: name,
-                MType: t,
+                MType: t.MType,
                 Delta: &v,
-            },true
+            }
+            return nil
         case "gauge":
-            return &metrics.Metric{
+            *t= metrics.Metric{
                 ID: name,
-                MType: t,
+                MType: t.MType,
                 Value: &s.val,
-            },true
-
+            }
+            return nil
         }
     }
-    return nil, false
+    return errors.New("df")
 }
 
 func ptrToInt(d int64) *int64 {
@@ -82,8 +91,8 @@ func Test(t *testing.T) {
     sugar := log.Sugar()
 
     r := chi.NewRouter()
-    r.Method(http.MethodPost, "/update/", UpdateJSON(sugar,&storageMock{}))
-    r.Method(http.MethodPost, "/value/", GetJSON(sugar, &storageMock{}))
+    r.Method(http.MethodPost, "/update/", UpdateJSON(sugar,&storageMock2{}))
+    r.Method(http.MethodPost, "/value/", GetJSON(sugar, &storageMock2{}))
 
     TUpdateJSON(t, r)
 

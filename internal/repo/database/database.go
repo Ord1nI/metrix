@@ -6,7 +6,6 @@ import (
 
     "encoding/json"
     "context"
-    "reflect"
     "errors"
 
     "github.com/Ord1nI/metrix/internal/repo/metrics"
@@ -55,36 +54,57 @@ func (db *Database) Add(name string, val interface{}) (error) {
     case metrics.Counter:
         _, err = db.DB.ExecContext(db.ctx, insertMetric, name, "counter", val, nil)
         return err
+    case metrics.Metric:
+        return db.AddMetric(val)
+    case []metrics.Metric:
+        return db.AddMetrics(val)
     }
     return errors.New("incorect metric type")
 }
 
 func (db *Database) Get(name string, val interface{}) (error) {
-    var err error
+    switch value := val.(type){
+        case *metrics.Gauge:
+            row := db.DB.QueryRowContext(db.ctx, selectMetric, name, "gauge")
+            return row.Scan(value)
+        case *metrics.Counter:
+            row := db.DB.QueryRowContext(db.ctx, selectMetric, name, "counter")
+            return row.Scan(value)
+        case *metrics.Metric:
+            m, ok := db.GetMetric(name,value.MType)
+            if !ok {
+                return errors.New("Metric not found")
+            }
+            *value = *m
+            return nil
+        case *[]metrics.Metric:
+            v, err := db.toMetrics()
+            *value = v
+            return err
 
-    v := reflect.ValueOf(val)
-    if v.Kind() == reflect.Pointer {
-        v = v.Elem()
-        switch v.Type().Name(){
-            case "Gauge":
-                row := db.DB.QueryRowContext(db.ctx, selectMetric, name, "gauge")
-                var gauge metrics.Gauge
-                err = row.Scan(&gauge)
-                return err
-            case "Counter":
-                row := db.DB.QueryRowContext(db.ctx, selectMetric, name, "counter")
-                var counter metrics.Counter
-                err = row.Scan(&counter)
-                return err
-            default:
-                return errors.New("incorect val type")
-        }
     }
     return errors.New("incorect val")
 }
 func (db *Database) AddMetric(m metrics.Metric) error {
     _, err := db.DB.ExecContext(db.ctx, insertMetric, m.ID, m.MType, m.Delta, m.Value)
     return err
+}
+func (db *Database) AddMetrics(m []metrics.Metric) error {
+    tx, err := db.DB.BeginTx(db.ctx, nil)
+
+    if err != nil {
+        return err
+    }
+    
+    for _, v := range m {
+        _, err := tx.ExecContext(db.ctx, insertMetric, v.ID, v.MType, v.Delta, v.Value)
+        if err != nil {
+            tx.Rollback()
+            return err
+        }
+    }
+    
+    return tx.Commit()
 }
 
 func (db *Database) GetMetric(name string, t string) (*metrics.Metric, bool) {
@@ -98,7 +118,7 @@ func (db *Database) GetMetric(name string, t string) (*metrics.Metric, bool) {
     err := row.Scan(&counter, &gauge)
 
     if err != nil {
-        panic(err)  //FIX as soon as possible
+        return nil, false 
     }
 
     switch true {

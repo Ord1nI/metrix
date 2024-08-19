@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func UpdateJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
+func UpdateJSON(l logger.Logger, s repo.GetAdder) http.Handler{
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
@@ -40,7 +40,7 @@ func UpdateJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
             return
         }
 
-        err = s.AddMetric(metric)
+        err = s.Add(metric.ID,metric)
 
         if err != nil {
             l.Infoln(err)
@@ -48,7 +48,10 @@ func UpdateJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
             return
         }
         
-        ptrMetric, _ := s.GetMetric(metric.ID, metric.MType)
+        ptrMetric := metrics.Metric{
+            MType: metric.MType,
+        }
+        s.Get(metric.ID, &ptrMetric)
 
         resMetric, err := json.Marshal(ptrMetric) //maybe can be error
 
@@ -66,7 +69,7 @@ func UpdateJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
     return http.HandlerFunc(fHandler)
 }
 
-func GetJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler {
+func GetJSON(l logger.Logger, s repo.GetAdder) http.Handler {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
@@ -93,15 +96,15 @@ func GetJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler {
             return
         }
 
-        ptrMetric, ok := s.GetMetric(metric.ID, metric.MType)
+        err = s.Get(metric.ID, &metric)
 
-        if !ok {
-            l.Infoln("Metric not found")
+        if err != nil {
+            l.Infoln(err)
             http.Error(res, "Metric not found", http.StatusNotFound)
             return
         }
 
-        resMetric, err := json.Marshal(ptrMetric) //maybe can be error
+        resMetric, err := json.Marshal(metric) //maybe can be error
 
         if err != nil {
             l.Infoln(err)
@@ -116,7 +119,7 @@ func GetJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler {
     return http.HandlerFunc(fHandler)
 }
 
-func UpdatesJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
+func UpdatesJSON(l logger.Logger, s repo.Repo) http.Handler{
     fHandler :=  func(res http.ResponseWriter, req *http.Request) {
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
             l.Infoln("Content Type doesn't contains application/json")
@@ -138,15 +141,15 @@ func UpdatesJSON(l logger.Logger, s repo.MetricGetAdder) http.Handler{
         
         if err != nil {
             l.Infoln(err)
-            http.Error(res, "Error while updating", http.StatusNotFound)
+            http.Error(res, "Error while updating", http.StatusBadRequest)
             return
         }
 
         for _, m := range metrics {
-            err = s.AddMetric(m)
+            err = s.Add(m.MType,m)
             if err != nil {
                 l.Infoln(err)
-                http.Error(res, "Error while updating", http.StatusNotFound)
+                http.Error(res, "Error while updating", http.StatusBadRequest)
                 return
             }
         }
