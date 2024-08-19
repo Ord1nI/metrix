@@ -2,42 +2,89 @@ package handlers
 
 import (
 	"github.com/go-chi/chi/v5"
+    "github.com/jackc/pgerrcode"
 
 	"bytes"
 	"cmp"
 	"encoding/json"
+    "fmt"
 	"io"
+    "time"
 	"net/http"
 	"slices"
+    "errors"
 	"strconv"
 
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"github.com/Ord1nI/metrix/internal/repo"
 	"github.com/Ord1nI/metrix/internal/logger"
 )
+var errList = errors.Join(errors.New(pgerrcode.UniqueViolation),errors.New(pgerrcode.ConnectionException))
 
+type HandlerError struct {
+    StatusCode int
+    Err error
+    Retry bool
+}
 
-func UpdateGauge(l logger.Logger,s repo.Adder) http.Handler {
-    fHandler := func(res http.ResponseWriter, req *http.Request) {
+func (h HandlerError) Error()string {
+    return fmt.Sprintf("error: %s, with code %d",h.Err.Error(), h.StatusCode)
+}
+
+func NewHandlerError(err error, status int) error{
+    return HandlerError {
+        Err:err,
+        StatusCode: status,
+        Retry:errors.Is(err, errList),
+    }
+}
+
+type APIFunc func(http.ResponseWriter, *http.Request) error
+
+func Make(l logger.Logger, f APIFunc, BackoffSchedule []time.Duration) http.Handler{
+    fun := func(w http.ResponseWriter, r *http.Request) {
+        if err := f(w,r); err != nil {
+            l.Infoln(err)
+            if apiErr, ok := err.(HandlerError); ok {
+                if apiErr.Retry {
+                    for _, backoff := range BackoffSchedule {
+                        if err = f(w,r); err == nil {
+                            l.Infoln("Error successfuly recovered")
+                            return
+                        }
+                        time.Sleep(backoff)
+                    }
+                }
+                http.Error(w, apiErr.Error(),apiErr.StatusCode)
+                return
+            } else {
+                http.Error(w, "internal server error", http.StatusInternalServerError)
+            }
+        }
+    }
+    return http.HandlerFunc(fun)
+}
+
+func UpdateGauge(s repo.Adder) APIFunc {
+    fHandler := func(res http.ResponseWriter, req *http.Request) error {
         name := chi.URLParam(req, "name")
         v := chi.URLParam(req, "val")
 
         val,err := strconv.ParseFloat(v, 64)
 
-        if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while updating", http.StatusBadRequest)
-            return
+       if err != nil {
+            return NewHandlerError(err,http.StatusBadRequest)
         }
 
         s.Add(name, metrics.Gauge(val))
         res.WriteHeader(http.StatusOK)
+        return nil
     }
-    return http.HandlerFunc(fHandler)
+    return APIFunc(fHandler)
 }
 
-func UpdateCounter(l logger.Logger, s repo.Adder) http.Handler{
-    fHandler := func(res http.ResponseWriter, req *http.Request) {
+func UpdateCounter(s repo.Adder) APIFunc{
+    fHandler := func(res http.ResponseWriter, req *http.Request) error{
 
         name := chi.URLParam(req, "name")
         v := chi.URLParam(req, "val")
@@ -45,72 +92,67 @@ func UpdateCounter(l logger.Logger, s repo.Adder) http.Handler{
         val, err := strconv.ParseInt(v, 10, 64)
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while updating", http.StatusBadRequest)
-            return
+            return NewHandlerError(err,http.StatusBadRequest)
         }
 
         s.Add(name, metrics.Counter(val))
         res.WriteHeader(http.StatusOK)
+        return nil
     }
-    return http.HandlerFunc(fHandler)
+    return APIFunc(fHandler)
 }
 
-func GetGauge(l logger.Logger,s repo.Getter) http.Handler {
-    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
+func GetGauge(s repo.Getter) APIFunc {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
         name := chi.URLParam(req,"name")
         var v metrics.Gauge
         err := s.Get(name, &v)
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Metric not found", http.StatusNotFound)
-            return
+            return NewHandlerError(err,http.StatusNotFound)
         }
 
         res.WriteHeader(http.StatusOK)
         io.WriteString(res, strconv.FormatFloat(float64(v), 'f', -1, 64))
         res.Write([]byte("\n"))
+        return nil
     }
-    return http.HandlerFunc(fHandler)
+    return APIFunc(fHandler)
 }
 
-func GetCounter(l logger.Logger, s repo.Getter) http.Handler {
+func GetCounter(s repo.Getter) APIFunc {
 
-    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
         name := chi.URLParam(req,"name")
         var v metrics.Counter
         err := s.Get(name, &v)
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Metric not found", http.StatusNotFound)
-            return
+            return NewHandlerError(err,http.StatusNotFound)
         }
 
         res.WriteHeader(http.StatusOK)
         io.WriteString(res, strconv.FormatInt(int64(v), 10))
         res.Write([]byte("\n"))
+        return nil
     }
-    return http.HandlerFunc(fHandler)
+    return APIFunc(fHandler)
 }
 
-func MainPage(l logger.Logger, m json.Marshaler) http.Handler {
-    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
+func MainPage(m json.Marshaler) APIFunc {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request)error {
 
         var metricArr []metrics.Metric
 
         data, err := json.Marshal(m)
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while loading main page", http.StatusNotFound)
+            return NewHandlerError(err,http.StatusBadRequest)
         }
 
         err = json.Unmarshal(data, &metricArr)
 
         if err != nil {
-            l.Infoln(err)
             http.Error(res, "Error while loading main page", http.StatusNotFound)
         }
 
@@ -146,9 +188,10 @@ func MainPage(l logger.Logger, m json.Marshaler) http.Handler {
         res.Header().Add("Content-Type", "text/html")
         res.WriteHeader(http.StatusOK)
         res.Write(html.Bytes())
+        return nil
     }
 
-    return http.HandlerFunc(fHandler)
+    return APIFunc(fHandler)
 }
 
 

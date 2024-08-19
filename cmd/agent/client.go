@@ -17,7 +17,6 @@ import (
 	"time"
 )
 
-
 func collectMetrics(stor *storage.MemStorage) {
     var mS runtime.MemStats
     runtime.ReadMemStats(&mS)
@@ -80,6 +79,18 @@ func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
     }
     return nil
 }
+func BackOff(r *resty.Request, URI string) (res *resty.Response, err error){
+        for _, backoff := range envVars.BackoffSchedule {
+            res, err = r.Post(URI)
+
+            if err == nil && res.StatusCode() == http.StatusOK{
+                break
+            }
+
+            time.Sleep(backoff)
+        }
+        return res, err
+}
 
 func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
     var metricArr []metrics.Metric
@@ -99,22 +110,14 @@ func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
         }
 
 
-        var res *resty.Response
-        for _, backoff := range envVars.BackoffSchedule {
+        req := client.R().SetHeader("Content-Type", "application/json").
+                        SetHeader("Content-Encoding", "gzip").
+                        SetHeader("Accept-Encoding", "gzip").
+                        SetBody(data)
 
-            res, err = client.R().
-                            SetHeader("Content-Type", "application/json").
-                            SetHeader("Content-Encoding", "gzip").
-                            SetHeader("Accept-Encoding", "gzip").
-                            SetBody(data).
-                            Post("/update/")
 
-            if err == nil && res.StatusCode() == http.StatusOK{
-                break
-            }
-
-            time.Sleep(backoff)
-        }
+                        
+        res, err := BackOff(req,"/update/")
 
         if err != nil {
             return err
@@ -141,12 +144,13 @@ func SendMetricsArrJSON(client *resty.Client, stor *storage.MemStorage) error {
         return err
     }
 
-    res, err := client.R().
+    req := client.R().
                     SetHeader("Content-Type", "application/json").
                     SetHeader("Content-Encoding", "gzip").
                     SetHeader("Accept-Encoding", "gzip").
-                    SetBody(metricsJSON).
-                    Post("/updates/")
+                    SetBody(metricsJSON)
+
+    res, err := BackOff(req,"/updates/")
     if err != nil {
         sugar.Error("Error while sending request")
         return err

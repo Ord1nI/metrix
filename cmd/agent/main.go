@@ -4,7 +4,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 
-    "time"
 
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
@@ -13,13 +12,7 @@ import (
 
 
 var (
-    envVars = configs.AgentConfig{
-        BackoffSchedule: []time.Duration{
-            100 * time.Millisecond,
-            500 * time.Millisecond,
-            1 * time.Second,
-        },
-    }
+    envVars = configs.AgentConfig{}
     sugar *zap.SugaredLogger
 )
 

@@ -48,4 +48,9 @@ func GetAgentConf(sugar logger.Logger, envVars *AgentConfig) {
     if envVars.ReportInterval == 10 {
         envVars.ReportInterval = *fReportInterval
     }
+    envVars.BackoffSchedule =[]time.Duration{
+        100 * time.Millisecond,
+        500 * time.Millisecond,
+        1 * time.Second,
+    }
 }

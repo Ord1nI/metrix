@@ -2,6 +2,7 @@ package configs
 
 import (
 	"flag"
+    "time"
 
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/caarlos0/env/v11"
@@ -13,6 +14,7 @@ type ServerConfig struct {
     FileStoragePath string `env:"FILE_STORAGE_PATH"`           //envvar $FILE_STORAGE or envDefault
     Restore bool `env:"RESTORE" envDefault:"true"`             //envvar $RESTORE or envDefault
     DBdsn string `env:"DATABASE_DSN"`
+    BackoffSchedule []time.Duration
 } 
 
 func ServerGetConf(sugar logger.Logger, envVars *ServerConfig) {
@@ -49,5 +51,10 @@ func ServerGetConf(sugar logger.Logger, envVars *ServerConfig) {
     }
     if envVars.DBdsn == "" {
         envVars.DBdsn = *fDatabase
+    }
+    envVars.BackoffSchedule =[]time.Duration{
+        1 * time.Second,
+        3 * time.Second,
+        5 * time.Second,
     }
 }

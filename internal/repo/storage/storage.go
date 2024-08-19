@@ -32,7 +32,7 @@ func (m *MemStorage) Add(name string, val interface{}) error {
     case metrics.Metric:
         return m.AddMetric(val)
     case []metrics.Metric:
-        m.AddMetrics(val)
+        return m.AddMetrics(val)
     }
     return errors.New("incorect metric type")
 }

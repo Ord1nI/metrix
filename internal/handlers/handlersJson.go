@@ -2,31 +2,27 @@ package handlers
 
 import (
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
-	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/repo"
 
 	"encoding/json"
+    "errors"
     "strings"
 	"io"
 	"net/http"
 )
 
-func UpdateJSON(l logger.Logger, s repo.GetAdder) http.Handler{
-    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
+func UpdateJSON(s repo.GetAdder) APIFunc{
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
-            l.Infoln("Content Type doesn't contains application/json")
-            http.Error(res, "Not json request", http.StatusBadRequest)
-            return
+            return NewHandlerError(errors.New("Not json request"),http.StatusBadRequest)
         }
 
         data, err := io.ReadAll(req.Body)
         req.Body.Close()
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while updating", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
         var metric metrics.Metric
@@ -35,17 +31,13 @@ func UpdateJSON(l logger.Logger, s repo.GetAdder) http.Handler{
 
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while updating", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
         err = s.Add(metric.ID,metric)
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while updating", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
         
         ptrMetric := metrics.Metric{
@@ -56,107 +48,89 @@ func UpdateJSON(l logger.Logger, s repo.GetAdder) http.Handler{
         resMetric, err := json.Marshal(ptrMetric) //maybe can be error
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while updating", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
         res.Header().Add("Content-Type", "application/json" )
         res.WriteHeader(http.StatusOK)
         res.Write(resMetric)
+        return nil
     }
 
-    return http.HandlerFunc(fHandler)
+    return APIFunc(fHandler)
 }
 
-func GetJSON(l logger.Logger, s repo.GetAdder) http.Handler {
-    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
+func GetJSON(s repo.GetAdder) APIFunc {
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
-            l.Infoln("Content Type doesn't contains application/json")
-            http.Error(res, "Not json request", http.StatusBadRequest)
-            return
+            return NewHandlerError(errors.New("Not json request"),http.StatusBadRequest)
         }
 
         data, err := io.ReadAll(req.Body)
         req.Body.Close()
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while getting", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
         var metric metrics.Metric
         err = json.Unmarshal(data, &metric)
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while gettings", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
         err = s.Get(metric.ID, &metric)
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Metric not found", http.StatusNotFound)
-            return
+            return NewHandlerError(err, http.StatusNotFound)
         }
 
         resMetric, err := json.Marshal(metric) //maybe can be error
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while gettings", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
         res.Header().Add("Content-Type", "application/json" )
         res.WriteHeader(http.StatusOK)
         res.Write(resMetric)
+        return nil
     }
-    return http.HandlerFunc(fHandler)
+    return APIFunc(fHandler)
 }
 
-func UpdatesJSON(l logger.Logger, s repo.Repo) http.Handler{
-    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
+func UpdatesJSON(s repo.Repo) APIFunc { 
+    fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
+
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
-            l.Infoln("Content Type doesn't contains application/json")
-            http.Error(res, "Not json request", http.StatusBadRequest)
-            return
+            return NewHandlerError(errors.New("Not json request"),http.StatusBadRequest)
         }
         
         data, err := io.ReadAll(req.Body)
         req.Body.Close()
 
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while getting", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
         var metrics []metrics.Metric
         err = json.Unmarshal(data, &metrics)
         
         if err != nil {
-            l.Infoln(err)
-            http.Error(res, "Error while updating", http.StatusBadRequest)
-            return
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
-        for _, m := range metrics {
-            err = s.Add(m.MType,m)
-            if err != nil {
-                l.Infoln(err)
-                http.Error(res, "Error while updating", http.StatusBadRequest)
-                return
-            }
+        err = s.Add("", metrics)
+        if err != nil {
+            return NewHandlerError(err, http.StatusBadRequest)
         }
 
         res.Header().Add("Content-Type", "application/json" )
         res.WriteHeader(http.StatusOK)
         res.Write([]byte("metrics added"))
+        return nil
     }
-    return http.HandlerFunc(fHandler)
+    return APIFunc(fHandler)
 }

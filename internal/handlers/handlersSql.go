@@ -2,30 +2,28 @@ package handlers
 
 import (
     "net/http"
+    "errors"
 
     "github.com/Ord1nI/metrix/internal/repo"
     "github.com/Ord1nI/metrix/internal/repo/database"
-    "github.com/Ord1nI/metrix/internal/logger"
 )
 
-func PingDB(l logger.Logger, r repo.Repo) http.Handler{
-    hf := func(res http.ResponseWriter, req *http.Request) {
+func PingDB(r repo.Repo) APIFunc{
+    hf := func(res http.ResponseWriter, req *http.Request) error {
         v, ok := r.(*database.Database)
         if ok {
             err := v.DB.PingContext(req.Context())
 
             if err != nil {
-                l.Errorln(err)
-                http.Error(res, err.Error(), http.StatusInternalServerError)
-                return
+                return NewHandlerError(err, http.StatusInternalServerError)
             } else {
                 res.WriteHeader(http.StatusOK)
                 res.Write([]byte("successfuly connect to database"))
-                return
+                return nil
             }
         } 
-        http.Error(res, "no database in use", http.StatusInternalServerError)
+        return NewHandlerError(errors.New("Doesnt use database"), http.StatusOK)
     }
-    return http.HandlerFunc(hf)
+    return APIFunc(hf)
 }
 
