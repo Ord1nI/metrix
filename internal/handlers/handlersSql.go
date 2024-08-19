@@ -12,7 +12,7 @@ func PingDB(l logger.Logger, r repo.Repo) http.Handler{
     hf := func(res http.ResponseWriter, req *http.Request) {
         v, ok := r.(*database.Database)
         if ok {
-            err := v.Db.PingContext(req.Context())
+            err := v.DB.PingContext(req.Context())
 
             if err != nil {
                 l.Errorln(err)

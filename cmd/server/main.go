@@ -37,7 +37,7 @@ func initF() {
 
 func initRepo() repo.Repo{
     db, err := database.NewDB(context.TODO(),config.DBdsn)
-    if err != nil && db.Db.Ping() != nil {
+    if err != nil || db.DB.Ping() != nil {
         sugar.Error("Fail to connect to database creating memstorage")
         memStor := storage.NewMemStorage()
 

@@ -192,7 +192,6 @@ func (m *MemStorage)StartDataSaver(StoreInterval int, FileStoragePath string) er
         if err != nil {
             return err
         }
-        return nil
     }
 }
 

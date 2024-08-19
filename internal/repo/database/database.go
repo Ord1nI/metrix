@@ -25,7 +25,7 @@ const (
 
 
 type Database struct {
-    Db *sql.DB
+    DB *sql.DB
     ctx context.Context
 }
 func NewDB(ctx context.Context, dsn string,) (*Database, error){
@@ -34,7 +34,7 @@ func NewDB(ctx context.Context, dsn string,) (*Database, error){
 }
 
 func(db *Database) CreateTable() error{
-    _, err := db.Db.ExecContext(db.ctx,`CREATE TABLE if not EXISTS metrix(
+    _, err := db.DB.ExecContext(db.ctx,`CREATE TABLE if not EXISTS metrix(
         "name" TEXT PRIMARY KEY,
         "type" TEXT NOT NULL,
         "counter" INTEGER DEFAULT NULL,
@@ -50,10 +50,10 @@ func (db *Database) Add(name string, val interface{}) (error) {
 
     switch val := val.(type) {
     case metrics.Gauge:
-        _, err = db.Db.ExecContext(db.ctx, insertMetric, name, "gauge", nil, val)
+        _, err = db.DB.ExecContext(db.ctx, insertMetric, name, "gauge", nil, val)
         return err
     case metrics.Counter:
-        _, err = db.Db.ExecContext(db.ctx, insertMetric, name, "counter", val, nil)
+        _, err = db.DB.ExecContext(db.ctx, insertMetric, name, "counter", val, nil)
         return err
     }
     return errors.New("incorect metric type")
@@ -67,12 +67,12 @@ func (db *Database) Get(name string, val interface{}) (error) {
         v = v.Elem()
         switch v.Type().Name(){
             case "Gauge":
-                row := db.Db.QueryRowContext(db.ctx, selectMetric, name, "gauge")
+                row := db.DB.QueryRowContext(db.ctx, selectMetric, name, "gauge")
                 var gauge metrics.Gauge
                 err = row.Scan(&gauge)
                 return err
             case "Counter":
-                row := db.Db.QueryRowContext(db.ctx, selectMetric, name, "counter")
+                row := db.DB.QueryRowContext(db.ctx, selectMetric, name, "counter")
                 var counter metrics.Counter
                 err = row.Scan(&counter)
                 return err
@@ -83,12 +83,12 @@ func (db *Database) Get(name string, val interface{}) (error) {
     return errors.New("incorect val")
 }
 func (db *Database) AddMetric(m metrics.Metric) error {
-    _, err := db.Db.ExecContext(db.ctx, insertMetric, m.ID, m.MType, m.Delta, m.Value)
+    _, err := db.DB.ExecContext(db.ctx, insertMetric, m.ID, m.MType, m.Delta, m.Value)
     return err
 }
 
 func (db *Database) GetMetric(name string, t string) (*metrics.Metric, bool) {
-    row := db.Db.QueryRowContext(db.ctx, selectMetric, name, t)
+    row := db.DB.QueryRowContext(db.ctx, selectMetric, name, t)
 
     var (
         counter sql.NullInt64
@@ -121,7 +121,7 @@ func (db *Database) GetMetric(name string, t string) (*metrics.Metric, bool) {
 }
 
 func (db *Database) toMetrics() ([]metrics.Metric, error){
-    rows, err := db.Db.QueryContext(db.ctx,"SELECT * FROM metrix")
+    rows, err:= db.DB.QueryContext(db.ctx,"SELECT * FROM metrix")
 
     if err != nil {
         return nil, err 
@@ -138,6 +138,10 @@ func (db *Database) toMetrics() ([]metrics.Metric, error){
             return nil, err
         }
         metricArr = append(metricArr, metric)
+    }
+
+    if err = rows.Err(); err != nil {
+        return nil , err
     }
     
     return metricArr, nil
@@ -159,5 +163,5 @@ func(db *Database) MarshalJSON() ([]byte, error){
 }
 
 func (db *Database) Close() error {
-    return db.Db.Close()
+    return db.DB.Close()
 }
