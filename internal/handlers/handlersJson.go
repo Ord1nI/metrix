@@ -15,7 +15,7 @@ func UpdateJSON(s repo.GetAdder) APIFunc{
     fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
-            return NewHandlerError(errors.New("Not json request"),http.StatusBadRequest)
+            return NewHandlerError(errors.New("not json request"),http.StatusBadRequest)
         }
 
         data, err := io.ReadAll(req.Body)
@@ -64,7 +64,7 @@ func GetJSON(s repo.GetAdder) APIFunc {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
-            return NewHandlerError(errors.New("Not json request"),http.StatusBadRequest)
+            return NewHandlerError(errors.New("not json request"),http.StatusBadRequest)
         }
 
         data, err := io.ReadAll(req.Body)
@@ -105,7 +105,7 @@ func UpdatesJSON(s repo.Repo) APIFunc {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
-            return NewHandlerError(errors.New("Not json request"),http.StatusBadRequest)
+            return NewHandlerError(errors.New("not json request"),http.StatusBadRequest)
         }
         
         data, err := io.ReadAll(req.Body)

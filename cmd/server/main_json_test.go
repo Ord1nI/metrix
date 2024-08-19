@@ -148,7 +148,7 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
                 json.Unmarshal(data, &metric)
 
                 assert.Equal(t, test.want.metric, metric)
-            } else {
+            // } else {
                 // r, _ := io.ReadAll(res.Body)
                 // assert.Equal(t, test.want.res, string(r))
             }
@@ -245,7 +245,7 @@ func tGetJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
                 json.Unmarshal(data, &metric)
 
                 assert.True(t, reflect.DeepEqual(test.want.metric, metric))
-            } else {
+            // } else {
                 // r, _ := io.ReadAll(res.Body)
                 // assert.Equal(t, test.want.res, string(r))
             }

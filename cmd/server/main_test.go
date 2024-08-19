@@ -108,6 +108,7 @@ func tCounter(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, cli
             res, err := client.Post(serv.URL+test.URL,"text/plain",nil)
 
             require.NoError(t,err)
+            defer res.Body.Close()
 
             assert.Equal(t, test.want.code, res.StatusCode)
 
@@ -193,7 +194,7 @@ func tGauge(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, clien
             res, err := client.Post(serv.URL+test.URL,"text/plain",nil)
 
             require.NoError(t,err)
-
+            defer res.Body.Close()
             assert.Equal(t, test.want.code, res.StatusCode)
 
             // r, _ := io.ReadAll(res.Body)
@@ -269,6 +270,7 @@ func tCounterGet(t *testing.T,  serv *httptest.Server, client *http.Client) {
             res, err := client.Get(serv.URL+test.URL)
 
             require.NoError(t,err)
+            defer res.Body.Close()
 
             assert.Equal(t, test.want.code, res.StatusCode)
             // r, _ := io.ReadAll(res.Body)
@@ -347,6 +349,7 @@ func tGaugeGet(t *testing.T,  serv *httptest.Server, client *http.Client) {
             res, err := client.Get(serv.URL+test.URL)
 
             require.NoError(t,err)
+            defer res.Body.Close()
 
             assert.Equal(t, test.want.code, res.StatusCode)
             // r, _ := io.ReadAll(res.Body)

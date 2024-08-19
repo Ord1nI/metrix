@@ -22,7 +22,7 @@ func PingDB(r repo.Repo) APIFunc{
                 return nil
             }
         } 
-        return NewHandlerError(errors.New("Doesnt use database"), http.StatusOK)
+        return NewHandlerError(errors.New("doesnt use database"), http.StatusBadRequest)
     }
     return APIFunc(hf)
 }
