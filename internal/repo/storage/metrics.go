@@ -37,6 +37,14 @@ func (mC *MCounter) Add(name string, val metrics.Counter) {
     (*mC)[name] += val
 }
 
+func (mG *MGauge) Set(name string, val metrics.Gauge) {
+    mG.Add(name,val)
+}
+
+func (mC *MCounter) Set(name string, val metrics.Counter) {
+    (*mC)[name] = val
+}
+
 func(mC *MCounter) ToMetrics() ([]metrics.Metric){
     jm := make([]metrics.Metric,0,len(*mC))
 

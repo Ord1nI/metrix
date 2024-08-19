@@ -66,6 +66,8 @@ func CreateRouter(stor repo.Repo, middlewares ...func(http.Handler)http.Handler)
 
     r.Method(http.MethodGet, "/ping", handlers.PingDB(sugar, stor))                  
 
+    r.Method(http.MethodPost, "/updates/", handlers.UpdatesJSON(sugar, stor))
+
     r.Route("/update", func(r chi.Router) {
         r.Method(http.MethodPost, "/", handlers.UpdateJSON(sugar, stor))
         // ANY /update/

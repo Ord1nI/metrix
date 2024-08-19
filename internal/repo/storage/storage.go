@@ -34,6 +34,18 @@ func (m *MemStorage) Add(name string, val interface{}) error {
     return errors.New("incorect metric type")
 }
 
+func (m *MemStorage) Set(name string, val interface{}) error {
+    switch val := val.(type) {
+    case metrics.Gauge:
+        m.Gauge.Set(name, val)
+        return nil
+    case metrics.Counter:
+        m.Counter.Set(name, val)
+        return nil
+    }
+    return errors.New("incorect metric type")
+}
+
 func (m *MemStorage)AddMetric(metric metrics.Metric) error{
     if metric.ID == "" {
         return errors.New("metric must hame name")

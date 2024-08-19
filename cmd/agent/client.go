@@ -54,6 +54,7 @@ func collectMetrics(stor *storage.MemStorage) {
 
     stor.AddGauge(mGauge)
 
+    stor.Set("PollCount",metrics.Counter(1))
 }
 
 
@@ -82,8 +83,6 @@ func SendGaugeMetrics(client *resty.Client, stor *storage.MemStorage) error{
 
 func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
     metricArr := stor.ToMetrics()
-    delta := int64(1)
-    metricArr = append(metricArr, metrics.Metric{ID:"PollCount",MType: "counter", Delta: &delta})
 
     for _, m := range metricArr {
         data, err := json.Marshal(m)
@@ -127,6 +126,36 @@ func SendMetricsJSON(client *resty.Client, stor *storage.MemStorage) error {
     return nil
 }
 
+func SendMetricsArrJSON(client *resty.Client, stor *storage.MemStorage) error {
+    metricsJSON, err := stor.MarshalJSON()
+    if err != nil {
+        sugar.Error("Error while marshaling")
+        return err
+    }
+
+    metricsJSON, err = compressor.ToGzip(metricsJSON)
+    if err != nil {
+        sugar.Error("Error while compressing")
+        return err
+    }
+
+    res, err := client.R().
+                    SetHeader("Content-Type", "application/json").
+                    SetHeader("Content-Encoding", "gzip").
+                    SetHeader("Accept-Encoding", "gzip").
+                    SetBody(metricsJSON).
+                    Post("/updates/")
+    if err != nil {
+        sugar.Error("Error while sending request")
+        return err
+    }
+    if res.StatusCode() != http.StatusOK {
+        sugar.Infoln("get status code", res.StatusCode())
+        return errors.New("StatusCode != OK")
+    }
+    return nil 
+
+}
 
 func StartClient(client *resty.Client, stor *storage.MemStorage) {
     for {
@@ -134,7 +163,7 @@ func StartClient(client *resty.Client, stor *storage.MemStorage) {
             collectMetrics(stor)
             time.Sleep(time.Second * time.Duration(envVars.PollInterval))
         }
-        err := SendMetricsJSON(client, stor)
+        err := SendMetricsArrJSON(client, stor)
 
         if err != nil {
             sugar.Infoln(err)
