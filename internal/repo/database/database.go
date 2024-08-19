@@ -36,7 +36,7 @@ func(db *Database) CreateTable() error{
     _, err := db.DB.ExecContext(db.ctx,`CREATE TABLE if not EXISTS metrix(
         "name" TEXT PRIMARY KEY,
         "type" TEXT NOT NULL,
-        "counter" INTEGER DEFAULT NULL,
+        "counter" BIGINT DEFAULT NULL,
         "gauge" DOUBLE PRECISION DEFAULT NULL);`)
     if err != nil {
         return err
