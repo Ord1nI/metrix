@@ -73,7 +73,7 @@ func (db *Database) Get(name string, val interface{}) (error) {
         case *metrics.Metric:
             m, ok := db.GetMetric(name,value.MType)
             if !ok {
-                return errors.New("Metric not found")
+                return errors.New("metric not found")
             }
             *value = *m
             return nil

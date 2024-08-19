@@ -121,21 +121,21 @@ func (m *MemStorage) Get(name string, val interface{}) error{
             *value = v
             return nil
         }
-        return errors.New("Metric not found")
+        return errors.New("metric not found")
     case *metrics.Counter:
         v, ok := m.Counter.Get(name)
         if ok {
             *value = v
             return nil
         }
-        return errors.New("Metric not found")
+        return errors.New("metric not found")
     case *metrics.Metric:
         v, ok := m.GetMetric(name, value.MType)
         if ok {
             *value = *v
             return nil
         }
-        return errors.New("Metric not found")
+        return errors.New("metric not found")
     case *[]metrics.Metric:
         *value = *m.toMetrics()
         return nil
