@@ -63,7 +63,7 @@ func (s *Server) Run() error {
 		http.ListenAndServe(s.Config.Address, s.Router)
 		return nil
 	}
-	return errors.New("Router not initialized")
+	return errors.New("router not initialized")
 }
 func (s *Server) InitRepo() error {
 	var errM error

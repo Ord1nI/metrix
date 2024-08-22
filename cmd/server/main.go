@@ -15,7 +15,12 @@ func main() {
     serv.Add(logger.MW(serv.Logger), compressor.MW(serv.Logger))
 
     serv.Init()
+    
     defer serv.Repo.Close()
 
-    serv.Run()
+    err = serv.Run()
+
+    if err != nil{
+        panic(err)
+    }
 }

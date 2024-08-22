@@ -23,6 +23,7 @@ func initF() {
     log.Infoln("loger created successfuly")
 
     configs.GetAgentConf(sugar, &envVars)
+    log.Infoln("sysvars:", envVars)
 }
 
 

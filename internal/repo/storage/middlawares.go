@@ -7,12 +7,12 @@ import (
     "github.com/Ord1nI/metrix/internal/logger"
 )
 
-func (stor *MemStorage)MW(logger logger.Logger, path string) func(http.Handler) http.Handler{
+func (m *MemStorage) MW(logger logger.Logger, path string) func(http.Handler) http.Handler{
     return func(h http.Handler) http.Handler {
         f := func(w http.ResponseWriter, r *http.Request) {
             h.ServeHTTP(w,r)
             if strings.Contains(r.URL.String(), "update") {
-                err := stor.WriteToFile(path) // add logger in future
+                err := m.WriteToFile(path) // add logger in future
                 if err != nil {
                     logger.Errorln("Error while wiring to file:", path)
                 } else {
