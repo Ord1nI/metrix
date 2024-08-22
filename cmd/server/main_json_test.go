@@ -12,18 +12,19 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+    "time"
 
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
+	"github.com/Ord1nI/metrix/internal/server"
 )
 
 func Test(t *testing.T) {
 
-    logger := zap.NewNop()
-    sugar = logger.Sugar()
     stor := storage.NewMemStorage()
 
-    r := CreateRouter(stor)
+    bs := []time.Duration{1 * time.Second,3 * time.Second,5 * time.Second}
+    r := server.CreateRouter(zap.NewNop().Sugar(),stor,bs)
 
     serv := httptest.NewServer(r)
     client := serv.Client()
@@ -148,9 +149,6 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
                 json.Unmarshal(data, &metric)
 
                 assert.Equal(t, test.want.metric, metric)
-            // } else {
-                // r, _ := io.ReadAll(res.Body)
-                // assert.Equal(t, test.want.res, string(r))
             }
             res.Body.Close()
         })

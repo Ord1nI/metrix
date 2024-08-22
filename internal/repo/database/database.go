@@ -25,7 +25,7 @@ const (
 
 type Database struct {
     DB *sql.DB
-    ctx context.Context
+    Ctx context.Context
 }
 func NewDB(ctx context.Context, dsn string,) (*Database, error){
     db, err := sql.Open("pgx", dsn)
@@ -33,7 +33,7 @@ func NewDB(ctx context.Context, dsn string,) (*Database, error){
 }
 
 func(db *Database) CreateTable() error{
-    _, err := db.DB.ExecContext(db.ctx,`CREATE TABLE if not EXISTS metrix(
+    _, err := db.DB.ExecContext(db.Ctx,`CREATE TABLE if not EXISTS metrix(
         "name" TEXT PRIMARY KEY,
         "type" TEXT NOT NULL,
         "counter" BIGINT DEFAULT NULL,
@@ -49,10 +49,10 @@ func (db *Database) Add(name string, val interface{}) (error) {
 
     switch val := val.(type) {
     case metrics.Gauge:
-        _, err = db.DB.ExecContext(db.ctx, insertMetric, name, "gauge", nil, val)
+        _, err = db.DB.ExecContext(db.Ctx, insertMetric, name, "gauge", nil, val)
         return err
     case metrics.Counter:
-        _, err = db.DB.ExecContext(db.ctx, insertMetric, name, "counter", val, nil)
+        _, err = db.DB.ExecContext(db.Ctx, insertMetric, name, "counter", val, nil)
         return err
     case metrics.Metric:
         return db.AddMetric(val)
@@ -65,10 +65,10 @@ func (db *Database) Add(name string, val interface{}) (error) {
 func (db *Database) Get(name string, val interface{}) (error) {
     switch value := val.(type){
         case *metrics.Gauge:
-            row := db.DB.QueryRowContext(db.ctx, selectMetric, name, "gauge")
+            row := db.DB.QueryRowContext(db.Ctx, selectMetric, name, "gauge")
             return row.Scan(value)
         case *metrics.Counter:
-            row := db.DB.QueryRowContext(db.ctx, selectMetric, name, "counter")
+            row := db.DB.QueryRowContext(db.Ctx, selectMetric, name, "counter")
             return row.Scan(value)
         case *metrics.Metric:
             m, ok := db.GetMetric(name,value.MType)
@@ -86,18 +86,18 @@ func (db *Database) Get(name string, val interface{}) (error) {
     return errors.New("incorect val")
 }
 func (db *Database) AddMetric(m metrics.Metric) error {
-    _, err := db.DB.ExecContext(db.ctx, insertMetric, m.ID, m.MType, m.Delta, m.Value)
+    _, err := db.DB.ExecContext(db.Ctx, insertMetric, m.ID, m.MType, m.Delta, m.Value)
     return err
 }
 func (db *Database) AddMetrics(m []metrics.Metric) error {
-    tx, err := db.DB.BeginTx(db.ctx, nil)
+    tx, err := db.DB.BeginTx(db.Ctx, nil)
 
     if err != nil {
         return err
     }
     
     for _, v := range m {
-        _, err := tx.ExecContext(db.ctx, insertMetric, v.ID, v.MType, v.Delta, v.Value)
+        _, err := tx.ExecContext(db.Ctx, insertMetric, v.ID, v.MType, v.Delta, v.Value)
         if err != nil {
             tx.Rollback()
             return err
@@ -108,7 +108,7 @@ func (db *Database) AddMetrics(m []metrics.Metric) error {
 }
 
 func (db *Database) GetMetric(name string, t string) (*metrics.Metric, bool) {
-    row := db.DB.QueryRowContext(db.ctx, selectMetric, name, t)
+    row := db.DB.QueryRowContext(db.Ctx, selectMetric, name, t)
 
     var (
         counter sql.NullInt64
@@ -141,7 +141,7 @@ func (db *Database) GetMetric(name string, t string) (*metrics.Metric, bool) {
 }
 
 func (db *Database) toMetrics() ([]metrics.Metric, error){
-    rows, err:= db.DB.QueryContext(db.ctx,"SELECT * FROM metrix")
+    rows, err:= db.DB.QueryContext(db.Ctx,"SELECT * FROM metrix")
 
     if err != nil {
         return nil, err 

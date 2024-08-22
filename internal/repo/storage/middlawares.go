@@ -7,7 +7,7 @@ import (
     "github.com/Ord1nI/metrix/internal/logger"
 )
 
-func SaveToFileMW(logger logger.Logger, path string, stor *MemStorage) func(http.Handler) http.Handler{
+func (stor *MemStorage)MW(logger logger.Logger, path string) func(http.Handler) http.Handler{
     return func(h http.Handler) http.Handler {
         f := func(w http.ResponseWriter, r *http.Request) {
             h.ServeHTTP(w,r)

@@ -2,8 +2,6 @@ package main
 
 import (
 	"github.com/go-resty/resty/v2"
-	"go.uber.org/zap"
-
 
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
@@ -13,17 +11,16 @@ import (
 
 var (
     envVars = configs.AgentConfig{}
-    sugar *zap.SugaredLogger
+    sugar logger.Logger
 )
 
 func initF() {
-    log, err := logger.NewLogger()
+    log, err := logger.New()
     if err != nil {
         panic(err)
     }
-    defer log.Sync()
-    sugar = log.Sugar()
-    sugar.Infoln("loger created successfuly")
+    sugar = log
+    log.Infoln("loger created successfuly")
 
     configs.GetAgentConf(sugar, &envVars)
 }

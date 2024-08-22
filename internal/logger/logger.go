@@ -11,11 +11,19 @@ type Logger interface {
     Errorln(args ...interface{})
     Warnln(args ...interface{})
     Fatalln(args ...interface{})
+    Info(args ...interface{})
+    Error(args ...interface{})
+    Warn(args ...interface{})
+    Fatal(args ...interface{})
+
 }
 
-func NewLogger() (*zap.Logger, error){
+func New() (Logger, error){
     logger, err := zap.NewDevelopment()
-    return logger, err
+    if err != nil {
+        return nil, err
+    }
+    return logger.Sugar(), nil
 }
 
 

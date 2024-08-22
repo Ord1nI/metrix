@@ -3,19 +3,23 @@ package main
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"net/http"
 	"net/http/httptest"
 	"testing"
+    "time"
 
 	"github.com/Ord1nI/metrix/internal/repo/storage"
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
+	"github.com/Ord1nI/metrix/internal/server"
 )
 
 func TestMain(t *testing.T) {
     stor := storage.NewMemStorage()
+    bs := []time.Duration{1 * time.Second,3 * time.Second,5 * time.Second}
 
-    r := CreateRouter(stor)
+    r := server.CreateRouter(zap.NewNop().Sugar(), stor, bs)
 
     serv := httptest.NewServer(r)
     client := serv.Client()
