@@ -128,12 +128,8 @@ func (s *Server) initStor() error {
         if s.Config.StoreInterval != 0 {
 
             s.Logger.Infoln("Starting Data saver with interval: ", s.Config.StoreInterval)
-            err := stor.StartDataSaver(s.Config.StoreInterval, s.Config.FileStoragePath)
-            if err != nil {
-                s.Logger.Infoln("Failed to start Data saver to file")
-            } else {
-                s.Logger.Infoln("Data saver started successfuly")
-            }
+            go stor.StartDataSaver(s.Config.StoreInterval, s.Config.FileStoragePath)
+            s.Logger.Infoln("Data saver started successfuly")
         } else {
             s.Logger.Infoln("Starting immediate Data saver")
             s.Add(stor.MW(s.Logger, s.Config.FileStoragePath))
