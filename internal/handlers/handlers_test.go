@@ -18,7 +18,7 @@ import (
 func JustMake(f APIFunc) http.Handler{
     fun := func(w http.ResponseWriter, r *http.Request) {
         if err := f(w,r); err != nil {
-            if apiErr , ok := err.(HandlerError); ok {
+            if apiErr , ok := err.(*HandlerError); ok {
                 http.Error(w, apiErr.Error(),apiErr.StatusCode)
                 return
             } else {

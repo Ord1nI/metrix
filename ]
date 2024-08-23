@@ -20,108 +20,64 @@ import (
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 )
 
-var (
-    UpdateErr error = errors.New("error while updating")
-    GettingErr error = errors.New("error while getting")
-    NotJsonErr error = errors.New("not json request")
-    SQLuniqueViolationErr error = errors.New(pgerrcode.UniqueViolation)
-    SQLconnectionExceptionErr error = errors.New(pgerrcode.ConnectionException)
-)
-
-type APIFunc func(http.ResponseWriter, *http.Request) error
-
-func (a APIFunc) ServerHTTP(w http.ResponseWriter, r *http.Request) {
-    err := a(w, r)
-    if e, ok := err.(*HandlerError); ok {
-        SendHandlerError(w, e)
-        return 
-    }
-    SendInternalError(w)
-}
+var errList = errors.Join(errors.New(pgerrcode.UniqueViolation), errors.New(pgerrcode.ConnectionException))
 
 type HandlerError struct {
 	StatusCode int
 	Err        error
+    Message string
 }
 
-func NewHandlerError(err error, status int) error {
-	return &HandlerError{
+func NewHandlerError(err error, message string,status int,) error {
+	return HandlerError{
 		Err:        err,
+        Message: message,
 		StatusCode: status,
 	}
 }
 
-func (h *HandlerError) Error() string {
+func (h HandlerError) Error() string {
 	return fmt.Sprintf("error: %s, with code %d", h.Err.Error(), h.StatusCode)
 }
 
-func SendInternalError(r http.ResponseWriter) {
-    http.Error(r, "Internal server error", http.StatusInternalServerError)
+func BakcOff(f APIFunc, w http.ResponseWriter, r *http.Request, BackoffSchedule []time.Duration) {
+	for _, backoff := range BackoffSchedule {
+        if err := f(w, r); err == nil {
+			l.Infoln("Error successfuly recovered")
+			return
+		}
+		time.Sleep(backoff)
+	}
 }
 
-func SendHandlerError(r http.ResponseWriter, err *HandlerError) {
-    http.Error(r, err.Error(), err.StatusCode)
-}
-
-
-type APIHandler struct {
-    l logger.Logger
+type APIFunc struct {
     f func(http.ResponseWriter, *http.Request) error
     BackOffScedule []time.Duration
     BackOffErrors error
 }
 
-func NewAPIHandler(l logger.Logger, f APIFunc, backOffSchedule []time.Duration, errorList error) *APIHandler{
-    return &APIHandler{
-        l: l,
-        f: f,
-        BackOffScedule: backOffSchedule,
-        BackOffErrors: errorList,
+func (Func *APIFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    err := Func.f(w,r)
+    if BakcOffErrors == nil {
+
     }
 }
 
-func (a *APIHandler) ServeHTTP(res http.ResponseWriter, r *http.Request) {
-    if err := a.f(res, r); err != nil {
-        a.l.Infoln("Got Error: ", err)
-        if apiErr, ok := err.(*HandlerError); ok {
-            if a.BackOffScedule == nil {
-                SendHandlerError(res, apiErr)
-                return
-            }
-
-            if a.BackOffErrors == nil {
-                SendHandlerError(res, apiErr)
-                return
-            }
-
-            if !errors.Is(a.BackOffErrors, apiErr) {
-                SendHandlerError(res, apiErr)
-                return
-            }
-
-            if a.BackOff(res, r) {
-                return
-            }
-            SendHandlerError(res, apiErr)
-            return
-        } else {
-            SendInternalError(res)
-            return
-        }
-    }
-}
-
-func (a *APIHandler) BackOff(res http.ResponseWriter, r *http.Request) bool{
-    a.l.Infoln("Trying backoff handler")
-	for _, backoff := range a.BackOffScedule {
-        if err := a.f(res, r); err == nil {
-			a.l.Infoln("Error successfuly recovered")
-			return true
+func Make(l logger.Logger, f APIFunc) http.Handler {
+	fun := func(w http.ResponseWriter, r *http.Request) {
+		if err := f.(w, r); err != nil {
+			l.Infoln(err)
+			if apiErr, ok := err.(HandlerError); ok {
+				if apiErr.Retry {
+				}
+				http.Error(w, apiErr.Error(), apiErr.StatusCode)
+				return
+			} else {
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+			}
 		}
-		time.Sleep(backoff)
 	}
-    a.l.Infoln("Error wans't recover")
-    return false
+	return http.HandlerFunc(fun)
 }
 
 func UpdateGauge(s repo.Adder) APIFunc {
@@ -132,7 +88,7 @@ func UpdateGauge(s repo.Adder) APIFunc {
 		val, err := strconv.ParseFloat(v, 64)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, UpdateErr), http.StatusBadRequest)
+			return NewHandlerError(err, http.StatusBadRequest)
 		}
 
 		s.Add(name, metrics.Gauge(val))
@@ -151,7 +107,7 @@ func UpdateCounter(s repo.Adder) APIFunc {
 		val, err := strconv.ParseInt(v, 10, 64)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, UpdateErr), http.StatusBadRequest)
+			return NewHandlerError(err, http.StatusBadRequest)
 		}
 
 		s.Add(name, metrics.Counter(val))
@@ -168,7 +124,7 @@ func GetGauge(s repo.Getter) APIFunc {
 		err := s.Get(name, &v)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, GettingErr), http.StatusNotFound)
+			return NewHandlerError(err, http.StatusNotFound)
 		}
 
 		res.WriteHeader(http.StatusOK)
@@ -187,7 +143,7 @@ func GetCounter(s repo.Getter) APIFunc {
 		err := s.Get(name, &v)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, GettingErr), http.StatusNotFound)
+			return NewHandlerError(err, http.StatusNotFound)
 		}
 
 		res.WriteHeader(http.StatusOK)
@@ -206,13 +162,13 @@ func MainPage(m json.Marshaler) APIFunc {
 		data, err := json.Marshal(m)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, errors.New("Error while loading main page")), http.StatusBadRequest)
+			return NewHandlerError(err, http.StatusBadRequest)
 		}
 
 		err = json.Unmarshal(data, &metricArr)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, errors.New("Error while loading main page")), http.StatusBadRequest)
+			http.Error(res, "Error while loading main page", http.StatusNotFound)
 		}
 
 		slices.SortStableFunc(metricArr, func(a, b metrics.Metric) int {
