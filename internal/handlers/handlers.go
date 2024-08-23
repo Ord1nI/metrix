@@ -21,11 +21,11 @@ import (
 )
 
 var (
-    UpdateErr error = errors.New("error while updating")
-    GettingErr error = errors.New("error while getting")
-    NotJsonErr error = errors.New("not json request")
-    SQLuniqueViolationErr error = errors.New(pgerrcode.UniqueViolation)
-    SQLconnectionExceptionErr error = errors.New(pgerrcode.ConnectionException)
+    ErrUpdate error = errors.New("error while updating")
+    ErrGetting error = errors.New("error while getting")
+    ErrNotJSON error = errors.New("not json request")
+    ErrSQLuniqueViolation error = errors.New(pgerrcode.UniqueViolation)
+    ErrSQLconnectionException error = errors.New(pgerrcode.ConnectionException)
 )
 
 type APIFunc func(http.ResponseWriter, *http.Request) error
@@ -132,7 +132,7 @@ func UpdateGauge(s repo.Adder) APIFunc {
 		val, err := strconv.ParseFloat(v, 64)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, UpdateErr), http.StatusBadRequest)
+			return NewHandlerError(errors.Join(err, ErrUpdate), http.StatusBadRequest)
 		}
 
 		s.Add(name, metrics.Gauge(val))
@@ -151,7 +151,7 @@ func UpdateCounter(s repo.Adder) APIFunc {
 		val, err := strconv.ParseInt(v, 10, 64)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, UpdateErr), http.StatusBadRequest)
+			return NewHandlerError(errors.Join(err, ErrUpdate), http.StatusBadRequest)
 		}
 
 		s.Add(name, metrics.Counter(val))
@@ -168,7 +168,7 @@ func GetGauge(s repo.Getter) APIFunc {
 		err := s.Get(name, &v)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, GettingErr), http.StatusNotFound)
+			return NewHandlerError(errors.Join(err, ErrGetting), http.StatusNotFound)
 		}
 
 		res.WriteHeader(http.StatusOK)
@@ -187,7 +187,7 @@ func GetCounter(s repo.Getter) APIFunc {
 		err := s.Get(name, &v)
 
 		if err != nil {
-			return NewHandlerError(errors.Join(err, GettingErr), http.StatusNotFound)
+			return NewHandlerError(errors.Join(err, ErrGetting), http.StatusNotFound)
 		}
 
 		res.WriteHeader(http.StatusOK)

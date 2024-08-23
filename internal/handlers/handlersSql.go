@@ -15,7 +15,7 @@ func PingDB(r repo.Repo) APIFunc{
             err := v.DB.PingContext(req.Context())
 
             if err != nil {
-                return NewHandlerError(err, http.StatusInternalServerError)
+                return NewHandlerError(errors.Join(err, errors.New("ping error")), http.StatusInternalServerError)
             } else {
                 res.WriteHeader(http.StatusOK)
                 res.Write([]byte("successfuly connect to database"))

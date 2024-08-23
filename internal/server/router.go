@@ -12,7 +12,7 @@ import (
 	"github.com/Ord1nI/metrix/internal/repo"
 )
 
-var BackOffErrList = errors.Join(handlers.SQLconnectionExceptionErr, handlers.SQLuniqueViolationErr)
+var BackOffErrList = errors.Join(handlers.ErrSQLconnectionException, handlers.ErrSQLuniqueViolation)
 
 func updateGaugeRoute(sugar logger.Logger, stor repo.Adder, BackoffSchedule []time.Duration) func(r chi.Router){
     return func(r chi.Router) {
