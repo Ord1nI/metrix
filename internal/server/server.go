@@ -65,6 +65,7 @@ func (s *Server) Run() error {
 	}
 	return errors.New("router not initialized")
 }
+ 
 func (s *Server) InitRepo() error {
 	var errM error
 	if s.Config.DBdsn != "" {

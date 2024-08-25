@@ -4,9 +4,6 @@ import (
 	"github.com/Ord1nI/metrix/internal/agent"
 )
 
-
-
-
 func main() {
 
     agent, err := agent.New()

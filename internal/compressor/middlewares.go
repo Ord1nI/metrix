@@ -15,7 +15,7 @@ func MW(l logger.Logger) func(http.Handler) http.Handler {
 			if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 				newBody, err := NewGzipBody(r.Body)
 				if err != nil {
-					l.Errorln("req", r.URL.String, "Error while decoding gzip")
+					l.Errorln("req", r.URL.String, "Error while decoding gzip", err)
 					http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
 					return
 				}

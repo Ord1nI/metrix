@@ -36,6 +36,11 @@ func New() (*Agent, error){
 }
 
 func (a *Agent) Run() {
+    runFunc := a.SendMetricsArrJSON
+    if a.Config.Key != "" {
+        runFunc = a.SendMetricsArrJSON
+    }
+
     pollTiker := time.NewTicker(time.Duration(a.Config.PollInterval) * time.Second)
     reportTicker := time.NewTicker(time.Duration(a.Config.ReportInterval) * time.Second)
     for {
@@ -43,7 +48,7 @@ func (a *Agent) Run() {
         a.CollectMetrics()
         a.Logger.Infoln("Metic collected")
         <-reportTicker.C
-        err := a.SendMetricsArrJSON()
+        err := runFunc()
         if err != nil {
             a.Logger.Infoln(err)
         } else {
