@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/Ord1nI/metrix/internal/logger"
-	"github.com/Ord1nI/metrix/internal/repo"
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 )
 
@@ -124,7 +123,11 @@ func (a *APIHandler) BackOff(res http.ResponseWriter, r *http.Request) bool{
     return false
 }
 
-func UpdateGauge(s repo.Adder) APIFunc {
+type Adder interface {
+    Add(name string, val interface{}) (error)
+}
+
+func UpdateGauge(s Adder) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 		name := chi.URLParam(req, "name")
 		v := chi.URLParam(req, "val")
@@ -142,7 +145,7 @@ func UpdateGauge(s repo.Adder) APIFunc {
 	return APIFunc(fHandler)
 }
 
-func UpdateCounter(s repo.Adder) APIFunc {
+func UpdateCounter(s Adder) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 
 		name := chi.URLParam(req, "name")
@@ -161,7 +164,11 @@ func UpdateCounter(s repo.Adder) APIFunc {
 	return APIFunc(fHandler)
 }
 
-func GetGauge(s repo.Getter) APIFunc {
+type Getter  interface {
+    Get(name string, val interface{}) (error)
+}
+
+func GetGauge(s Getter) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 		name := chi.URLParam(req, "name")
 		var v metrics.Gauge
@@ -179,7 +186,7 @@ func GetGauge(s repo.Getter) APIFunc {
 	return APIFunc(fHandler)
 }
 
-func GetCounter(s repo.Getter) APIFunc {
+func GetCounter(s Getter) APIFunc {
 
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 		name := chi.URLParam(req, "name")

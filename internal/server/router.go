@@ -14,7 +14,7 @@ import (
 
 var BackOffErrList = errors.Join(handlers.ErrSQLconnectionException, handlers.ErrSQLuniqueViolation)
 
-func updateGaugeRoute(sugar logger.Logger, stor repo.Adder, BackoffSchedule []time.Duration) func(r chi.Router){
+func updateGaugeRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []time.Duration) func(r chi.Router){
     return func(r chi.Router) {
         // ANY /update/gauge/
         r.HandleFunc("/", handlers.NotFound) 
@@ -25,7 +25,7 @@ func updateGaugeRoute(sugar logger.Logger, stor repo.Adder, BackoffSchedule []ti
     }
 }
 
-func updateCounterRoute(sugar logger.Logger, stor repo.Adder, BackoffSchedule []time.Duration) func(r chi.Router){
+func updateCounterRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []time.Duration) func(r chi.Router){
     return func(r chi.Router) {
         // ANY /update/gauge/
         r.HandleFunc("/", handlers.NotFound)                    
@@ -36,7 +36,7 @@ func updateCounterRoute(sugar logger.Logger, stor repo.Adder, BackoffSchedule []
         r.HandleFunc("/{name}/{val}/*", handlers.BadRequest)  
     }
 }
-func valueGaugeRoute(sugar logger.Logger, stor repo.Getter, BackoffSchedule []time.Duration) func(r chi.Router){
+func valueGaugeRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []time.Duration) func(r chi.Router){
     return func(r chi.Router) {
         //ANY /value/gauge/
         r.HandleFunc("/", handlers.NotFound)  
@@ -47,7 +47,7 @@ func valueGaugeRoute(sugar logger.Logger, stor repo.Getter, BackoffSchedule []ti
         r.HandleFunc("/{name}/*", handlers.BadRequest)      
     }
 }
-func valueCounterRoute(sugar logger.Logger, stor repo.Getter, BackoffSchedule []time.Duration) func(r chi.Router){
+func valueCounterRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []time.Duration) func(r chi.Router){
     return func(r chi.Router) {
         //ANY /value/counter/
         r.HandleFunc("/", handlers.NotFound)                   

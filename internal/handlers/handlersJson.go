@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
-	"github.com/Ord1nI/metrix/internal/repo"
 
 	"encoding/json"
     "errors"
@@ -11,7 +10,12 @@ import (
 	"net/http"
 )
 
-func UpdateJSON(s repo.GetAdder) APIFunc{
+type GetAdder interface {
+    Getter
+    Adder
+}
+
+func UpdateJSON(s GetAdder) APIFunc{
     fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
@@ -60,7 +64,7 @@ func UpdateJSON(s repo.GetAdder) APIFunc{
     return APIFunc(fHandler)
 }
 
-func GetJSON(s repo.GetAdder) APIFunc {
+func GetJSON(s GetAdder) APIFunc {
     fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
@@ -101,7 +105,7 @@ func GetJSON(s repo.GetAdder) APIFunc {
     return APIFunc(fHandler)
 }
 
-func UpdatesJSON(s repo.Repo) APIFunc { 
+func UpdatesJSON(s Adder) APIFunc { 
     fHandler :=  func(res http.ResponseWriter, req *http.Request) error {
 
         if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
