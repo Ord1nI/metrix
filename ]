@@ -30,12 +30,6 @@ type Database struct {
     WaitTime time.Duration
 }
 
-func (db *Database) Ping() error {
-    childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-    defer cancel()
-    return db.DB.PingContext(childCtx)
-}
-
 func NewDB(dsn string, waitTime time.Duration) (*Database, error){
     db, err := sql.Open("pgx", dsn)
     return &Database{db, waitTime}, err
@@ -65,8 +59,6 @@ func (db *Database) Add(name string, val interface{}) (error) {
         _, err = db.DB.ExecContext(childCtx, insertMetric, name, "gauge", nil, val)
         return err
     case metrics.Counter:
-        childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-        defer cancel()
         _, err = db.DB.ExecContext(childCtx, insertMetric, name, "counter", val, nil)
         return err
     case metrics.Metric:
@@ -80,14 +72,10 @@ func (db *Database) Add(name string, val interface{}) (error) {
 func (db *Database) Get(name string, val interface{}) (error) {
     switch value := val.(type){
         case *metrics.Gauge:
-            childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-            defer cancel()
-            row := db.DB.QueryRowContext(childCtx, selectMetric, name, "gauge")
+            row := db.DB.QueryRowContext(db.Ctx, selectMetric, name, "gauge")
             return row.Scan(value)
         case *metrics.Counter:
-            childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-            defer cancel()
-            row := db.DB.QueryRowContext(childCtx, selectMetric, name, "counter")
+            row := db.DB.QueryRowContext(db.Ctx, selectMetric, name, "counter")
             return row.Scan(value)
         case *metrics.Metric:
             m, ok := db.GetMetric(name,value.MType)
@@ -105,24 +93,18 @@ func (db *Database) Get(name string, val interface{}) (error) {
     return errors.New("incorect val")
 }
 func (db *Database) AddMetric(m metrics.Metric) error {
-    childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-    defer cancel()
-    _, err := db.DB.ExecContext(childCtx, insertMetric, m.ID, m.MType, m.Delta, m.Value)
+    _, err := db.DB.ExecContext(db.Ctx, insertMetric, m.ID, m.MType, m.Delta, m.Value)
     return err
 }
 func (db *Database) AddMetrics(m []metrics.Metric) error {
-    childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-    defer cancel()
-    tx, err := db.DB.BeginTx(childCtx, nil)
+    tx, err := db.DB.BeginTx(db.Ctx, nil)
 
     if err != nil {
         return err
     }
     
     for _, v := range m {
-        childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-        defer cancel()
-        _, err := tx.ExecContext(childCtx, insertMetric, v.ID, v.MType, v.Delta, v.Value)
+        _, err := tx.ExecContext(db.Ctx, insertMetric, v.ID, v.MType, v.Delta, v.Value)
         if err != nil {
             tx.Rollback()
             return err
@@ -133,9 +115,7 @@ func (db *Database) AddMetrics(m []metrics.Metric) error {
 }
 
 func (db *Database) GetMetric(name string, t string) (*metrics.Metric, bool) {
-    childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-    defer cancel()
-    row := db.DB.QueryRowContext(childCtx, selectMetric, name, t)
+    row := db.DB.QueryRowContext(db.Ctx, selectMetric, name, t)
 
     var (
         counter sql.NullInt64
@@ -168,9 +148,7 @@ func (db *Database) GetMetric(name string, t string) (*metrics.Metric, bool) {
 }
 
 func (db *Database) toMetrics() ([]metrics.Metric, error){
-    childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
-    defer cancel()
-    rows, err:= db.DB.QueryContext(childCtx, "SELECT * FROM metrix")
+    rows, err:= db.DB.QueryContext(db.Ctx,"SELECT * FROM metrix")
 
     if err != nil {
         return nil, err 
