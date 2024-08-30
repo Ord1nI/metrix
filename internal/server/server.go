@@ -1,9 +1,9 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -86,13 +86,13 @@ func (s *Server) InitRepo() error {
 
 func (s *Server) initDB() error {
     s.Logger.Infoln("Trying connection to database")
-	db, err := database.NewDB(context.TODO(), s.Config.DBdsn)
+	db, err := database.NewDB(s.Config.DBdsn, time.Millisecond * 500)
 	if err != nil {
         s.Logger.Infoln("Failed connecting to database")
 		return err
 	}
 
-	err = db.DB.PingContext(db.Ctx)
+	err = db.Ping()
 	if err != nil {
         s.Logger.Infoln("Failed connecting to database")
 		return err
