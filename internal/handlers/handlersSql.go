@@ -12,7 +12,7 @@ func PingDB(r repo.Repo) APIFunc{
     hf := func(res http.ResponseWriter, req *http.Request) error {
         v, ok := r.(*database.Database)
         if ok {
-            err := v.DB.PingContext(req.Context())
+            err := v.Ping()
 
             if err != nil {
                 return NewHandlerError(errors.Join(err, errors.New("ping error")), http.StatusInternalServerError)
