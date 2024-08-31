@@ -93,6 +93,34 @@ func (a *Agent) SendGaugeMetrics() error {
 	}
 	return nil
 }
+func (a *Agent) SendMetricJSON(data metrics.Metric) error {
+    Mdata, err := json.Marshal(data)
+    if err != nil {
+        return err
+    }
+    Mdata, err = compressor.ToGzip(Mdata)
+
+    if err != nil {
+        return err
+    }
+
+    req := a.Client.R().SetHeader("Content-Type", "application/json").
+        SetHeader("Content-Encoding", "gzip").
+        SetHeader("Accept-Encoding", "gzip").
+        SetBody(Mdata)
+
+    res, err := backOff(req, "/update/", a.Config.BackoffSchedule)
+
+    if err != nil {
+        return err
+    }
+
+    if res.StatusCode() != http.StatusOK {
+        return errors.New("doesnt sent")
+    }
+
+    return nil
+}
 
 func (a *Agent) SendMetricsJSON() error {
 	var metricArr []metrics.Metric
@@ -100,31 +128,10 @@ func (a *Agent) SendMetricsJSON() error {
 	a.Logger.Infoln(metricArr)
 
 	for _, m := range metricArr {
-		data, err := json.Marshal(m)
-		if err != nil {
-			return err
-		}
-
-		data, err = compressor.ToGzip(data)
-
-		if err != nil {
-			return err
-		}
-
-		req := a.Client.R().SetHeader("Content-Type", "application/json").
-			SetHeader("Content-Encoding", "gzip").
-			SetHeader("Accept-Encoding", "gzip").
-			SetBody(data)
-
-		res, err := backOff(req, "/update/", a.Config.BackoffSchedule)
-
-		if err != nil {
-			return err
-		}
-
-		if res.StatusCode() != http.StatusOK {
-			return errors.New("doesnt sent")
-		}
+        err := a.SendMetricJSON(m)
+        if err != nil {
+            a.Logger.Errorln(err)
+        }
 	}
 
 	return nil

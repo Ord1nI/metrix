@@ -3,10 +3,10 @@ package server
 import (
 	"github.com/go-chi/chi/v5"
 
+	"errors"
 	"net/http"
-    "errors"
-    "time"
-    
+	"time"
+
 	"github.com/Ord1nI/metrix/internal/handlers"
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/repo"
@@ -69,7 +69,6 @@ func CreateRouter(log logger.Logger, re repo.Repo, BackoffSchedule []time.Durati
     for _, i := range middlewares {
         r.Use(i)
     }
-
 
     // GET /
     r.Method(http.MethodGet, "/", 

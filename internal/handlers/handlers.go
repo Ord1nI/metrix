@@ -210,7 +210,7 @@ func MainPage(m json.Marshaler) APIFunc {
 
 		var metricArr []metrics.Metric
 
-		data, err := json.Marshal(m)
+        data, err := json.Marshal(m)
 
 		if err != nil {
 			return NewHandlerError(errors.Join(err, errors.New("Error while loading main page")), http.StatusBadRequest)

@@ -35,24 +35,28 @@ func New() (*Agent, error){
     return &Agent, nil
 }
 
-func (a *Agent) Run() {
-    runFunc := a.SendMetricsArrJSON
-    if a.Config.Key != "" {
-        runFunc = a.SendMetricsArrJSON
+func (a *Agent) Run() chan struct{} {
+    if a.Config.RateLimit != 0 {
+        end := make(chan struct{})
+        a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)))
+        return end
+    } else {
+        go func() {
+            pollTiker := time.NewTicker(time.Duration(a.Config.PollInterval) * time.Second)
+            reportTicker := time.NewTicker(time.Duration(a.Config.ReportInterval) * time.Second)
+            for {
+                <-pollTiker.C
+                a.CollectMetrics()
+                a.Logger.Infoln("Metic collected")
+                <-reportTicker.C
+                err := a.SendMetricsJSON()
+                if err != nil {
+                    a.Logger.Infoln(err)
+                } else {
+                    a.Logger.Infoln("Metics sent")
+                }
+            }
+        }()
     }
-
-    pollTiker := time.NewTicker(time.Duration(a.Config.PollInterval) * time.Second)
-    reportTicker := time.NewTicker(time.Duration(a.Config.ReportInterval) * time.Second)
-    for {
-        <-pollTiker.C
-        a.CollectMetrics()
-        a.Logger.Infoln("Metic collected")
-        <-reportTicker.C
-        err := runFunc()
-        if err != nil {
-            a.Logger.Infoln(err)
-        } else {
-            a.Logger.Infoln("Metics sent")
-        }
-    }
+    return nil
 }

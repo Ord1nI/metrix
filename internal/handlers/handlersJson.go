@@ -4,10 +4,10 @@ import (
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 
 	"encoding/json"
-    "errors"
-    "strings"
+	"errors"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type GetAdder interface {

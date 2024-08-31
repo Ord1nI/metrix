@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/Ord1nI/metrix/internal/agent"
 )
 
@@ -11,5 +13,9 @@ func main() {
         panic(err)
     }
 
-    agent.Run()
+    stop := agent.Run()
+    if stop != nil {
+        defer close(stop)
+    }
+    time.Sleep(time.Second * 150)
 }
