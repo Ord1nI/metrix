@@ -1,103 +1,139 @@
 package handlers
 
 import (
-	"github.com/Ord1nI/metrix/internal/storage"
+	"github.com/Ord1nI/metrix/internal/repo/metrics"
 
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
+	"strings"
 )
 
-func UpdateJSON(s storage.MetricGetAdder) http.Handler{
-    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
-
-        if req.Header.Get("Content-Type") != "application/json" {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("not json request\n"))
-            return
-        }
-
-        data, err := io.ReadAll(req.Body)
-        req.Body.Close()
-
-        if err != nil {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("Bad rquest body\n"))
-            return
-        }
-
-        var metric storage.Metric
-
-        err = json.Unmarshal(data, &metric)
-
-
-        if err != nil {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("Cant unmarshal json\n"))
-            return
-        }
-
-        err = s.AddMetric(metric)
-
-        if err != nil {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte(fmt.Sprint(err)))
-            return
-        }
-        
-        ptrMetric, _ := s.GetMetric(metric.ID, metric.MType)
-
-        resMetric, _ := json.Marshal(ptrMetric) //maybe can be error
-
-        res.Header().Add("Content-Type", "application/json" )
-        res.WriteHeader(http.StatusOK)
-        res.Write(resMetric)
-    }
-
-    return http.HandlerFunc(fHandler)
+type GetAdder interface {
+	Getter
+	Adder
 }
 
-func GetJSON(s storage.MetricGetAdder) http.Handler {
-    fHandler :=  func(res http.ResponseWriter, req *http.Request) {
+func UpdateJSON(s GetAdder) APIFunc {
+	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 
-        if req.Header.Get("Content-Type") != "application/json" {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("not json request\n"))
-            return
-        }
+		if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
+			return NewHandlerError(ErrNotJSON, http.StatusBadRequest)
+		}
 
-        data, err := io.ReadAll(req.Body)
-        req.Body.Close()
+		data, err := io.ReadAll(req.Body)
+		req.Body.Close()
 
-        if err != nil {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("Bad rquest body\n"))
-            return
-        }
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrUpdate), http.StatusBadRequest)
+		}
 
-        var metric storage.Metric
-        err = json.Unmarshal(data, &metric)
+		var metric metrics.Metric
 
-        if err != nil {
-            res.WriteHeader(http.StatusBadRequest)
-            res.Write([]byte("Cant unmarshal json\n"))
-            return
-        }
+		err = json.Unmarshal(data, &metric)
 
-        ptrMetric, ok := s.GetMetric(metric.ID, metric.MType)
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrUpdate), http.StatusBadRequest)
+		}
 
-        if !ok {
-            res.WriteHeader(http.StatusNotFound)
-            res.Write([]byte("Cant find this metric"))
-            return
-        }
+		err = s.Add(metric.ID, metric)
 
-        resMetric, _ := json.Marshal(ptrMetric) //maybe can be error
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrUpdate), http.StatusBadRequest)
+		}
 
-        res.Header().Add("Content-Type", "application/json" )
-        res.WriteHeader(http.StatusOK)
-        res.Write(resMetric)
-    }
-    return http.HandlerFunc(fHandler)
+		ptrMetric := metrics.Metric{
+			MType: metric.MType,
+		}
+		s.Get(metric.ID, &ptrMetric)
+
+		resMetric, err := json.Marshal(ptrMetric) //maybe can be error
+
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrUpdate), http.StatusBadRequest)
+		}
+
+		res.Header().Add("Content-Type", "application/json")
+		res.WriteHeader(http.StatusOK)
+		res.Write(resMetric)
+		return nil
+	}
+
+	return APIFunc(fHandler)
+}
+
+func GetJSON(s GetAdder) APIFunc {
+	fHandler := func(res http.ResponseWriter, req *http.Request) error {
+
+		if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
+			return NewHandlerError(ErrNotJSON, http.StatusBadRequest)
+		}
+
+		data, err := io.ReadAll(req.Body)
+		req.Body.Close()
+
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrGetting), http.StatusBadRequest)
+		}
+
+		var metric metrics.Metric
+		err = json.Unmarshal(data, &metric)
+
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrGetting), http.StatusBadRequest)
+		}
+
+		err = s.Get(metric.ID, &metric)
+
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrGetting), http.StatusNotFound)
+		}
+
+		resMetric, err := json.Marshal(metric) //maybe can be error
+
+		if err != nil {
+			return NewHandlerError(err, http.StatusBadRequest)
+		}
+
+		res.Header().Add("Content-Type", "application/json")
+		res.WriteHeader(http.StatusOK)
+		res.Write(resMetric)
+		return nil
+	}
+	return APIFunc(fHandler)
+}
+
+func UpdatesJSON(s Adder) APIFunc {
+	fHandler := func(res http.ResponseWriter, req *http.Request) error {
+
+		if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
+			return NewHandlerError(ErrNotJSON, http.StatusBadRequest)
+		}
+
+		data, err := io.ReadAll(req.Body)
+		req.Body.Close()
+
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrGetting), http.StatusBadRequest)
+		}
+
+		var metrics []metrics.Metric
+		err = json.Unmarshal(data, &metrics)
+
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrGetting), http.StatusBadRequest)
+		}
+
+		err = s.Add("", metrics)
+		if err != nil {
+			return NewHandlerError(errors.Join(err, ErrGetting), http.StatusBadRequest)
+		}
+
+		res.Header().Add("Content-Type", "application/json")
+		res.WriteHeader(http.StatusOK)
+		res.Write([]byte("metrics added"))
+		return nil
+	}
+	return APIFunc(fHandler)
 }
