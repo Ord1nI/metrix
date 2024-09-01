@@ -60,15 +60,12 @@ func (a *Agent) StartWorkers(jobs <-chan metrics.Metric) {
 		a.Logger.Infoln("start", i, "worker")
 		go func() {
 			for j := range jobs {
-                if _,c := <-jobs; !c {
-                    a.Logger.Infoln("end worker")
-                    return
-                }
 				err := a.SendMetricJSON(j)
 				if err != nil {
 					a.Logger.Infoln(err)
 				}
 			}
+            a.Logger.Infoln("End worker")
 		}()
 	}
 }

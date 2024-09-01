@@ -1,5 +1,4 @@
 package agent
-
 import (
 	"flag"
 	"time"
