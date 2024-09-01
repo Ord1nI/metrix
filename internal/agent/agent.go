@@ -9,45 +9,45 @@ import (
 )
 
 type Agent struct {
-    Repo *storage.MemStorage
+	Repo   *storage.MemStorage
 	Logger logger.Logger
 	Config Config
-    Client *resty.Client
+	Client *resty.Client
 }
 
-func New() (*Agent, error){
-    log, err := logger.New()
+func New() (*Agent, error) {
+	log, err := logger.New()
 
-    if err != nil {
-        return nil, err
-    }
-    log.Infoln("Logger inited successfuly")
-    Agent := Agent{
-        Logger: log,
-        Repo: storage.NewMemStorage(),
-    }
+	if err != nil {
+		return nil, err
+	}
+	log.Infoln("Logger inited successfuly")
+	Agent := Agent{
+		Logger: log,
+		Repo:   storage.NewMemStorage(),
+	}
 
-    Agent.GetConf()
-    Agent.Client = resty.New().SetBaseURL("http://" + Agent.Config.Address)
+	Agent.GetConf()
+	Agent.Client = resty.New().SetBaseURL("http://" + Agent.Config.Address)
 
-    log.Infoln("Agent inited successfuly")
+	log.Infoln("Agent inited successfuly")
 
-    return &Agent, nil
+	return &Agent, nil
 }
 
 func (a *Agent) Run() {
-    pollTiker := time.NewTicker(time.Duration(a.Config.PollInterval) * time.Second)
-    reportTicker := time.NewTicker(time.Duration(a.Config.ReportInterval) * time.Second)
-    for {
-        <-pollTiker.C
-        a.CollectMetrics()
-        a.Logger.Infoln("Metic collected")
-        <-reportTicker.C
-        err := a.SendMetricsArrJSON()
-        if err != nil {
-            a.Logger.Infoln(err)
-        } else {
-            a.Logger.Infoln("Metics sent")
-        }
-    }
+	pollTiker := time.NewTicker(time.Duration(a.Config.PollInterval) * time.Second)
+	reportTicker := time.NewTicker(time.Duration(a.Config.ReportInterval) * time.Second)
+	for {
+		<-pollTiker.C
+		a.CollectMetrics()
+		a.Logger.Infoln("Metic collected")
+		<-reportTicker.C
+		err := a.SendMetricsArrJSON()
+		if err != nil {
+			a.Logger.Infoln(err)
+		} else {
+			a.Logger.Infoln("Metics sent")
+		}
+	}
 }

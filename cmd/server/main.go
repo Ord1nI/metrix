@@ -1,9 +1,8 @@
 package main
 
 import (
-    "github.com/Ord1nI/metrix/internal/server"
-    "github.com/Ord1nI/metrix/internal/logger"
-    "github.com/Ord1nI/metrix/internal/compressor"
+	"github.com/Ord1nI/metrix/internal/middlewares"
+	"github.com/Ord1nI/metrix/internal/server"
 )
 
 func main() {
@@ -12,11 +11,7 @@ func main() {
         panic(err)
     }
 
-    serv.Add(logger.MW(serv.Logger), compressor.MW(serv.Logger))
-
-    serv.Init()
-    
-    defer serv.Repo.Close()
+    serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
 
     err = serv.Run()
 

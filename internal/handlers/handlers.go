@@ -29,13 +29,17 @@ var (
 
 type APIFunc func(http.ResponseWriter, *http.Request) error
 
-func (a APIFunc) ServerHTTP(w http.ResponseWriter, r *http.Request) {
+func (a APIFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     err := a(w, r)
-    if e, ok := err.(*HandlerError); ok {
-        SendHandlerError(w, e)
-        return 
+    if err != nil {
+        if e, ok := err.(*HandlerError); ok {
+            SendHandlerError(w, e)
+            return 
+        } else {
+            SendInternalError(w)
+            return
+        }
     }
-    SendInternalError(w)
 }
 
 type HandlerError struct {

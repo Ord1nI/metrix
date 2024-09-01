@@ -3,46 +3,7 @@ package compressor
 import (
 	"bytes"
 	"compress/gzip"
-	"errors"
-	"io"
-	"net/http"
 )
-type gzipWriter struct {
-    http.ResponseWriter
-    Writer io.Writer
-}
-
-type gzipBody struct {
-    gz *gzip.Reader
-    body io.ReadCloser
-}
-
-func NewGzipBody(body io.ReadCloser) (*gzipBody, error){
-    gz, err := gzip.NewReader(body)
-
-    if err != nil {
-        return nil, err
-    }
-    return &gzipBody{
-        gz:gz,
-        body:body,
-    }, nil
-}
-
-func (b *gzipBody) Read(p []byte) (n int, err error) {
-    return b.gz.Read(p)
-}
-
-func (b *gzipBody) Close() error{
-    err := errors.Join(
-        b.gz.Close(),
-        b.body.Close())
-    return err
-}
-
-func (w gzipWriter) Write(b []byte) (int, error) {
-    return w.Writer.Write(b)
-}
 
 func ToGzip(data []byte) ([]byte, error){
     var buf bytes.Buffer
