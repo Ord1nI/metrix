@@ -6,16 +6,16 @@ import (
 )
 
 func main() {
-    serv, err := server.New()
-    if err != nil {
-        panic(err)
-    }
+	serv, err := server.New()
+	if err != nil {
+		panic(err)
+	}
 
-    serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
+	serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
 
-    err = serv.Run()
+	err = serv.Run()
 
-    if err != nil{
-        panic(err)
-    }
+	if err != nil {
+		panic(err)
+	}
 }

@@ -60,12 +60,12 @@ func (s *Server) Add(mw ...func(http.Handler) http.Handler) error {
 }
 
 func (s *Server) Run() error {
-    err := s.Init()
-    if err != nil {
-        s.Logger.Errorln("Fail while starting server")
-        return err
-    }
-    defer s.Repo.Close()
+	err := s.Init()
+	if err != nil {
+		s.Logger.Errorln("Fail while starting server")
+		return err
+	}
+	defer s.Repo.Close()
 	if s.Router != nil {
 		http.ListenAndServe(s.Config.Address, s.Router)
 	}

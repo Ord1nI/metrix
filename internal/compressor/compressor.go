@@ -5,43 +5,42 @@ import (
 	"compress/gzip"
 )
 
-func ToGzip(data []byte) ([]byte, error){
-    var buf bytes.Buffer
+func ToGzip(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
 
-    w := gzip.NewWriter(&buf)
+	w := gzip.NewWriter(&buf)
 
-    _, err := w.Write(data)
+	_, err := w.Write(data)
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    err = w.Close()
+	err = w.Close()
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    return buf.Bytes(),nil
+	return buf.Bytes(), nil
 }
 
-func FromGzip(data []byte)  ([]byte, error) {
-    r, err := gzip.NewReader(bytes.NewReader(data))
+func FromGzip(data []byte) ([]byte, error) {
+	r, err := gzip.NewReader(bytes.NewReader(data))
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    defer r.Close()
+	defer r.Close()
 
-    var b bytes.Buffer
+	var b bytes.Buffer
 
-    _, err = b.ReadFrom(r)
+	_, err = b.ReadFrom(r)
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    return b.Bytes(), nil
+	return b.Bytes(), nil
 }
-
