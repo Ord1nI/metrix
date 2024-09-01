@@ -8,10 +8,10 @@ import (
 
 func main() {
 
-    agent, err := agent.New()
-    if err != nil {
-        panic(err)
-    }
+	agent, err := agent.New()
+	if err != nil {
+		panic(err)
+	}
 
     stop := agent.Run()
     if stop != nil {

@@ -9,30 +9,31 @@ import (
 )
 
 type Agent struct {
-    Repo *storage.MemStorage
+	Repo   *storage.MemStorage
 	Logger logger.Logger
 	Config Config
-    Client *resty.Client
+	Client *resty.Client
 }
 
-func New() (*Agent, error){
-    log, err := logger.New()
+func New() (*Agent, error) {
+	log, err := logger.New()
 
-    if err != nil {
-        return nil, err
-    }
-    log.Infoln("Logger inited successfuly")
-    Agent := Agent{
-        Logger: log,
-        Repo: storage.NewMemStorage(),
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    Agent.GetConf()
-    Agent.Client = resty.New().SetBaseURL("http://" + Agent.Config.Address)
+	log.Infoln("Logger inited successfuly")
+	Agent := Agent{
+		Logger: log,
+		Repo:   storage.NewMemStorage(),
+	}
 
-    log.Infoln("Agent inited successfuly")
+	Agent.GetConf()
+	Agent.Client = resty.New().SetBaseURL("http://" + Agent.Config.Address)
 
-    return &Agent, nil
+	log.Infoln("Agent inited successfuly")
+
+	return &Agent, nil
 }
 
 func (a *Agent) Run() chan struct{} {

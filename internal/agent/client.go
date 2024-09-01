@@ -1,9 +1,10 @@
 package agent
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/json"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"math/rand/v2"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	"github.com/Ord1nI/metrix/internal/compressor"
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
-	"github.com/Ord1nI/metrix/internal/signature"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -166,8 +166,8 @@ func (a *Agent) SendMetricsArrJSON() error {
 		return errors.New("StatusCode != OK")
 	}
 	return nil
-
 }
+
 func (a *Agent) SendMetricsArrJSONwithSign() error {
 	metricsJSON, err := a.Repo.MarshalJSON()
 	if err != nil {
@@ -187,16 +187,15 @@ func (a *Agent) SendMetricsArrJSONwithSign() error {
 		SetHeader("Accept-Encoding", "gzip").
 		SetBody(metricsJSON)
 
-	signer := signature.New(sha256.New, []byte(a.Config.Key))
+	signer := hmac.New(sha256.New, []byte(a.Config.Key))
 
-	Hash, err := signer.Sign(metricsJSON)
-	a.Logger.Info(hex.EncodeToString(Hash))
+	_, err = signer.Write(metricsJSON)
 
 	if err != nil {
 		a.Logger.Error("Error while signing")
 		return err
 	}
-	req.SetHeader("HashSHA256", hex.EncodeToString(Hash))
+	req.SetHeader("HashSHA256", hex.EncodeToString(signer.Sum(nil)))
 
 	res, err := backOff(req, "/updates/", a.Config.BackoffSchedule)
 	if err != nil {
