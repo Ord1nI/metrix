@@ -6,12 +6,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"net/http"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
@@ -35,6 +39,7 @@ func backOff(r *resty.Request, URI string, BackoffSchedule []time.Duration) (res
 func (a *Agent) CollectMetrics() {
 	var mS runtime.MemStats
 	runtime.ReadMemStats(&mS)
+    memory, _ := mem.VirtualMemory()
 	mGauge := storage.MGauge{
 		"Alloc":         metrics.Gauge(mS.Alloc),
 		"BuckHashSys":   metrics.Gauge(mS.BuckHashSys),
@@ -64,7 +69,15 @@ func (a *Agent) CollectMetrics() {
 		"Sys":           metrics.Gauge(mS.Sys),
 		"TotalAlloc":    metrics.Gauge(mS.TotalAlloc),
 		"RandomValue":   metrics.Gauge(rand.Float64()),
+
+        "TotalMemory":   metrics.Gauge(memory.Total),
+        "FreeMemory":    metrics.Gauge(memory.Free),
 	}
+    cpuUtil, _ := cpu.Percent(0,true)
+
+    for i, v := range cpuUtil {
+        mGauge.Add(fmt.Sprintf("CPUutilization%d",i+1), metrics.Gauge(v))
+    }
 
 	a.Repo.AddGauge(mGauge)
 

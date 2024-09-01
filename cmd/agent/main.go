@@ -15,5 +15,5 @@ func main() {
     if stop != nil {
         defer close(stop)
     }
-    for {}
+    <-stop
 }
