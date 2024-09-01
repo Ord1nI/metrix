@@ -159,8 +159,8 @@ func (a *Agent) SendMetricsArrJSON() error {
 		return errors.New("StatusCode != OK")
 	}
 	return nil
-
 }
+
 func (a *Agent) SendMetricsArrJSONwithSign() error {
 	metricsJSON, err := a.Repo.MarshalJSON()
 	if err != nil {

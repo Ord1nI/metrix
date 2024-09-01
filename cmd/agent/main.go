@@ -6,10 +6,10 @@ import (
 
 func main() {
 
-    agent, err := agent.New()
-    if err != nil {
-        panic(err)
-    }
+	agent, err := agent.New()
+	if err != nil {
+		panic(err)
+	}
 
-    agent.Run()
+	agent.Run()
 }

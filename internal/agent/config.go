@@ -52,6 +52,21 @@ func (a *Agent) GetConf() {
 	if a.Config.Key == "" {
 		a.Config.Key = *fKey
 	}
+
+	flag.Parse()
+
+	if a.Config.Address == "localhost:8080" {
+		a.Config.Address = *fAddress
+	}
+
+	if a.Config.PollInterval == 2 {
+		a.Config.PollInterval = *fPoolInterval
+	}
+
+	if a.Config.ReportInterval == 10 {
+		a.Config.ReportInterval = *fReportInterval
+	}
+
 	a.Config.BackoffSchedule = []time.Duration{
 		100 * time.Millisecond,
 		500 * time.Millisecond,

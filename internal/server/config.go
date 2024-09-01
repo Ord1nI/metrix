@@ -57,6 +57,7 @@ func (s *Server) GetConf() error {
 	if s.Config.Key == "" {
 		s.Config.Key = *fKey
 	}
+
 	s.Config.BackoffSchedule = []time.Duration{
 		1 * time.Second,
 		3 * time.Second,

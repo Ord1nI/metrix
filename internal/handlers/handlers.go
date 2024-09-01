@@ -20,22 +20,26 @@ import (
 )
 
 var (
-    ErrUpdate error = errors.New("error while updating")
-    ErrGetting error = errors.New("error while getting")
-    ErrNotJSON error = errors.New("not json request")
-    ErrSQLuniqueViolation error = errors.New(pgerrcode.UniqueViolation)
-    ErrSQLconnectionException error = errors.New(pgerrcode.ConnectionException)
+	ErrUpdate                 error = errors.New("error while updating")
+	ErrGetting                error = errors.New("error while getting")
+	ErrNotJSON                error = errors.New("not json request")
+	ErrSQLuniqueViolation     error = errors.New(pgerrcode.UniqueViolation)
+	ErrSQLconnectionException error = errors.New(pgerrcode.ConnectionException)
 )
 
 type APIFunc func(http.ResponseWriter, *http.Request) error
 
-func (a APIFunc) ServerHTTP(w http.ResponseWriter, r *http.Request) {
-    err := a(w, r)
-    if e, ok := err.(*HandlerError); ok {
-        SendHandlerError(w, e)
-        return 
-    }
-    SendInternalError(w)
+func (a APIFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	err := a(w, r)
+	if err != nil {
+		if e, ok := err.(*HandlerError); ok {
+			SendHandlerError(w, e)
+			return
+		} else {
+			SendInternalError(w)
+			return
+		}
+	}
 }
 
 type HandlerError struct {
@@ -55,76 +59,75 @@ func (h *HandlerError) Error() string {
 }
 
 func SendInternalError(r http.ResponseWriter) {
-    http.Error(r, "Internal server error", http.StatusInternalServerError)
+	http.Error(r, "Internal server error", http.StatusInternalServerError)
 }
 
 func SendHandlerError(r http.ResponseWriter, err *HandlerError) {
-    http.Error(r, err.Error(), err.StatusCode)
+	http.Error(r, err.Error(), err.StatusCode)
 }
-
 
 type APIHandler struct {
-    l logger.Logger
-    f func(http.ResponseWriter, *http.Request) error
-    BackOffScedule []time.Duration
-    BackOffErrors error
+	l              logger.Logger
+	f              func(http.ResponseWriter, *http.Request) error
+	BackOffScedule []time.Duration
+	BackOffErrors  error
 }
 
-func NewAPIHandler(l logger.Logger, f APIFunc, backOffSchedule []time.Duration, errorList error) *APIHandler{
-    return &APIHandler{
-        l: l,
-        f: f,
-        BackOffScedule: backOffSchedule,
-        BackOffErrors: errorList,
-    }
+func NewAPIHandler(l logger.Logger, f APIFunc, backOffSchedule []time.Duration, errorList error) *APIHandler {
+	return &APIHandler{
+		l:              l,
+		f:              f,
+		BackOffScedule: backOffSchedule,
+		BackOffErrors:  errorList,
+	}
 }
 
 func (a *APIHandler) ServeHTTP(res http.ResponseWriter, r *http.Request) {
-    if err := a.f(res, r); err != nil {
-        a.l.Infoln("Got Error: ", err)
-        if apiErr, ok := err.(*HandlerError); ok {
-            if a.BackOffScedule == nil {
-                SendHandlerError(res, apiErr)
-                return
-            }
+	if err := a.f(res, r); err != nil {
+		a.l.Infoln("Got Error: ", err)
+		if apiErr, ok := err.(*HandlerError); ok {
+			if a.BackOffScedule == nil {
+				SendHandlerError(res, apiErr)
+				return
+			}
 
-            if a.BackOffErrors == nil {
-                SendHandlerError(res, apiErr)
-                return
-            }
+			if a.BackOffErrors == nil {
+				SendHandlerError(res, apiErr)
+				return
+			}
 
-            if !errors.Is(a.BackOffErrors, apiErr) {
-                SendHandlerError(res, apiErr)
-                return
-            }
+			if !errors.Is(a.BackOffErrors, apiErr) {
+				SendHandlerError(res, apiErr)
+				return
+			}
 
-            if a.BackOff(res, r) {
-                return
-            }
-            SendHandlerError(res, apiErr)
-            return
-        } else {
-            SendInternalError(res)
-            return
-        }
-    }
+			if a.BackOff(res, r) {
+				return
+			}
+			SendHandlerError(res, apiErr)
+			return
+		} else {
+			SendInternalError(res)
+			return
+		}
+	}
 }
 
-func (a *APIHandler) BackOff(res http.ResponseWriter, r *http.Request) bool{
-    a.l.Infoln("Trying backoff handler")
+func (a *APIHandler) BackOff(res http.ResponseWriter, r *http.Request) bool {
+	a.l.Infoln("Trying backoff handler")
 	for _, backoff := range a.BackOffScedule {
-        if err := a.f(res, r); err == nil {
+		if err := a.f(res, r); err == nil {
 			a.l.Infoln("Error successfuly recovered")
 			return true
 		}
 		time.Sleep(backoff)
 	}
-    a.l.Infoln("Error wans't recover")
-    return false
+	a.l.Infoln("Error wans't recover")
+	return false
 }
 
 type Adder interface {
-    Add(name string, val interface{}) (error)
+	Add(name string, val interface{}) error
 }
 
 func UpdateGauge(s Adder) APIFunc {
@@ -164,8 +167,8 @@ func UpdateCounter(s Adder) APIFunc {
 	return APIFunc(fHandler)
 }
 
-type Getter  interface {
-    Get(name string, val interface{}) (error)
+type Getter interface {
+	Get(name string, val interface{}) error
 }
 
 func GetGauge(s Getter) APIFunc {
