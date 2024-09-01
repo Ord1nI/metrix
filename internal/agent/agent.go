@@ -21,6 +21,7 @@ func New() (*Agent, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	log.Infoln("Logger inited successfuly")
 	Agent := Agent{
 		Logger: log,
@@ -38,7 +39,7 @@ func New() (*Agent, error) {
 func (a *Agent) Run() {
     runFunc := a.SendMetricsArrJSON
     if a.Config.Key != "" {
-        runFunc = a.SendMetricsArrJSON
+        runFunc = a.SendMetricsArrJSONwithSign
     }
 
     pollTiker := time.NewTicker(time.Duration(a.Config.PollInterval) * time.Second)

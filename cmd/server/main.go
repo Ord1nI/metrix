@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/Ord1nI/metrix/internal/server"
-	"github.com/Ord1nI/metrix/internal/signature"
+
 	"github.com/Ord1nI/metrix/internal/middlewares"
+	"github.com/Ord1nI/metrix/internal/server"
 )
 
 func main() {
@@ -13,7 +13,7 @@ func main() {
 	}
 
     if serv.Config.Key != "" {
-        serv.Add(middlewares.LoggerMW(serv.Logger), signature.MW(serv.Logger, []byte(serv.Config.Key)), middlewares.CompressorMW(serv.Logger))
+        serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.SingMW(serv.Logger, []byte(serv.Config.Key)), middlewares.CompressorMW(serv.Logger))
     } else {
         serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
     }
