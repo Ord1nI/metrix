@@ -39,7 +39,7 @@ func backOff(r *resty.Request, URI string, BackoffSchedule []time.Duration) (res
 func (a *Agent) CollectMetrics() {
 	var mS runtime.MemStats
 	runtime.ReadMemStats(&mS)
-    memory, _ := mem.VirtualMemory()
+	memory, _ := mem.VirtualMemory()
 	mGauge := storage.MGauge{
 		"Alloc":         metrics.Gauge(mS.Alloc),
 		"BuckHashSys":   metrics.Gauge(mS.BuckHashSys),
@@ -70,14 +70,14 @@ func (a *Agent) CollectMetrics() {
 		"TotalAlloc":    metrics.Gauge(mS.TotalAlloc),
 		"RandomValue":   metrics.Gauge(rand.Float64()),
 
-        "TotalMemory":   metrics.Gauge(memory.Total),
-        "FreeMemory":    metrics.Gauge(memory.Free),
+		"TotalMemory": metrics.Gauge(memory.Total),
+		"FreeMemory":  metrics.Gauge(memory.Free),
 	}
-    cpuUtil, _ := cpu.Percent(0,true)
+	cpuUtil, _ := cpu.Percent(0, true)
 
-    for i, v := range cpuUtil {
-        mGauge.Add(fmt.Sprintf("CPUutilization%d",i+1), metrics.Gauge(v))
-    }
+	for i, v := range cpuUtil {
+		mGauge.Add(fmt.Sprintf("CPUutilization%d", i+1), metrics.Gauge(v))
+	}
 
 	a.Repo.AddGauge(mGauge)
 
@@ -107,32 +107,32 @@ func (a *Agent) SendGaugeMetrics() error {
 	return nil
 }
 func (a *Agent) SendMetricJSON(data metrics.Metric) error {
-    Mdata, err := json.Marshal(data)
-    if err != nil {
-        return err
-    }
-    Mdata, err = compressor.ToGzip(Mdata)
+	Mdata, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	Mdata, err = compressor.ToGzip(Mdata)
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    req := a.Client.R().SetHeader("Content-Type", "application/json").
-        SetHeader("Content-Encoding", "gzip").
-        SetHeader("Accept-Encoding", "gzip").
-        SetBody(Mdata)
+	req := a.Client.R().SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetBody(Mdata)
 
-    res, err := backOff(req, "/update/", a.Config.BackoffSchedule)
+	res, err := backOff(req, "/update/", a.Config.BackoffSchedule)
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    if res.StatusCode() != http.StatusOK {
-        return errors.New("doesnt sent")
-    }
+	if res.StatusCode() != http.StatusOK {
+		return errors.New("doesnt sent")
+	}
 
-    return nil
+	return nil
 }
 
 func (a *Agent) SendMetricsJSON() error {
@@ -141,10 +141,10 @@ func (a *Agent) SendMetricsJSON() error {
 	a.Logger.Infoln(metricArr)
 
 	for _, m := range metricArr {
-        err := a.SendMetricJSON(m)
-        if err != nil {
-            a.Logger.Errorln(err)
-        }
+		err := a.SendMetricJSON(m)
+		if err != nil {
+			a.Logger.Errorln(err)
+		}
 	}
 
 	return nil

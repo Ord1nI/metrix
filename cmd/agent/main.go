@@ -11,9 +11,9 @@ func main() {
 		panic(err)
 	}
 
-    stop := agent.Run()
-    if stop != nil {
-        defer close(stop)
-    }
-    <-stop
+	stop := agent.Run()
+	if stop != nil {
+		defer close(stop)
+	}
+	<-stop
 }

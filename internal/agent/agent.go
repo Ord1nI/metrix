@@ -35,7 +35,7 @@ func New() (*Agent, error) {
 }
 
 func (a *Agent) Run() chan struct{} {
-    end := make(chan struct{})
-    a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)))
-    return end
+	end := make(chan struct{})
+	a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)))
+	return end
 }

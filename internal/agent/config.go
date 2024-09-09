@@ -1,4 +1,5 @@
 package agent
+
 import (
 	"flag"
 	"time"
@@ -11,8 +12,8 @@ type Config struct {
 	PollInterval    int64  `env:"POLL_INTERVAL" envDefault:"2"`        //envvar $POOLINTERVAL or envDefault
 	ReportInterval  int64  `env:"REPORT_INTERVAL" envDefault:"10"`     //envvar $REPORTINTERVAL or envDefault
 	BackoffSchedule []time.Duration
-    Key             string `env:"KEY" envDefault:""`
-    RateLimit       int `env:"RATE_LIMIT" envDefault:"1"`
+	Key             string `env:"KEY" envDefault:""`
+	RateLimit       int    `env:"RATE_LIMIT" envDefault:"1"`
 }
 
 func (a *Agent) GetConf() {

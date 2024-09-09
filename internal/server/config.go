@@ -14,7 +14,7 @@ type Config struct {
 	Restore         bool   `env:"RESTORE" envDefault:"true"`           //envvar $RESTORE or envDefault
 	DBdsn           string `env:"DATABASE_DSN"`
 	BackoffSchedule []time.Duration
-    Key             string `env:"KEY" envDefault:""`
+	Key             string `env:"KEY" envDefault:""`
 }
 
 func (s *Server) GetConf() error {
