@@ -12,7 +12,7 @@ type Config struct {
 	ReportInterval  int64  `env:"REPORT_INTERVAL" envDefault:"10"`     //envvar $REPORTINTERVAL or envDefault
 	BackoffSchedule []time.Duration
     Key             string `env:"KEY" envDefault:""`
-    RateLimit      int `env:"RATE_LIMIT" envDefault:"0"`
+    RateLimit       int `env:"RATE_LIMIT" envDefault:"1"`
 }
 
 func (a *Agent) GetConf() {

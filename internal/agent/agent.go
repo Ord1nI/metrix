@@ -35,9 +35,6 @@ func New() (*Agent, error) {
 }
 
 func (a *Agent) Run() chan struct{} {
-    if a.Config.RateLimit == 0{
-        a.Config.RateLimit = 2
-    }
     end := make(chan struct{})
     a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)))
     return end
