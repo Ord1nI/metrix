@@ -1,8 +1,6 @@
 package agent
 
 import (
-	"time"
-
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
 	"github.com/go-resty/resty/v2"
@@ -37,27 +35,10 @@ func New() (*Agent, error) {
 }
 
 func (a *Agent) Run() chan struct{} {
-    if a.Config.RateLimit != 0 {
-        end := make(chan struct{})
-        a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)))
-        return end
-    } else {
-        go func() {
-            pollTiker := time.NewTicker(time.Duration(a.Config.PollInterval) * time.Second)
-            reportTicker := time.NewTicker(time.Duration(a.Config.ReportInterval) * time.Second)
-            for {
-                <-pollTiker.C
-                a.CollectMetrics()
-                a.Logger.Infoln("Metic collected")
-                <-reportTicker.C
-                err := a.SendMetricsJSON()
-                if err != nil {
-                    a.Logger.Infoln(err)
-                } else {
-                    a.Logger.Infoln("Metics sent")
-                }
-            }
-        }()
+    if a.Config.RateLimit == 0{
+        a.Config.RateLimit = 2
     }
-    return nil
+    end := make(chan struct{})
+    a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)))
+    return end
 }
