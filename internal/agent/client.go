@@ -1,14 +1,21 @@
 package agent
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"net/http"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
@@ -32,6 +39,7 @@ func backOff(r *resty.Request, URI string, BackoffSchedule []time.Duration) (res
 func (a *Agent) CollectMetrics() {
 	var mS runtime.MemStats
 	runtime.ReadMemStats(&mS)
+	memory, _ := mem.VirtualMemory()
 	mGauge := storage.MGauge{
 		"Alloc":         metrics.Gauge(mS.Alloc),
 		"BuckHashSys":   metrics.Gauge(mS.BuckHashSys),
@@ -61,6 +69,14 @@ func (a *Agent) CollectMetrics() {
 		"Sys":           metrics.Gauge(mS.Sys),
 		"TotalAlloc":    metrics.Gauge(mS.TotalAlloc),
 		"RandomValue":   metrics.Gauge(rand.Float64()),
+
+		"TotalMemory": metrics.Gauge(memory.Total),
+		"FreeMemory":  metrics.Gauge(memory.Free),
+	}
+	cpuUtil, _ := cpu.Percent(0, true)
+
+	for i, v := range cpuUtil {
+		mGauge.Add(fmt.Sprintf("CPUutilization%d", i+1), metrics.Gauge(v))
 	}
 
 	a.Repo.AddGauge(mGauge)
@@ -90,6 +106,34 @@ func (a *Agent) SendGaugeMetrics() error {
 	}
 	return nil
 }
+func (a *Agent) SendMetricJSON(data metrics.Metric) error {
+	Mdata, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	Mdata, err = compressor.ToGzip(Mdata)
+
+	if err != nil {
+		return err
+	}
+
+	req := a.Client.R().SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetBody(Mdata)
+
+	res, err := backOff(req, "/update/", a.Config.BackoffSchedule)
+
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return errors.New("doesnt sent")
+	}
+
+	return nil
+}
 
 func (a *Agent) SendMetricsJSON() error {
 	var metricArr []metrics.Metric
@@ -97,30 +141,9 @@ func (a *Agent) SendMetricsJSON() error {
 	a.Logger.Infoln(metricArr)
 
 	for _, m := range metricArr {
-		data, err := json.Marshal(m)
+		err := a.SendMetricJSON(m)
 		if err != nil {
-			return err
-		}
-
-		data, err = compressor.ToGzip(data)
-
-		if err != nil {
-			return err
-		}
-
-		req := a.Client.R().SetHeader("Content-Type", "application/json").
-			SetHeader("Content-Encoding", "gzip").
-			SetHeader("Accept-Encoding", "gzip").
-			SetBody(data)
-
-		res, err := backOff(req, "/update/", a.Config.BackoffSchedule)
-
-		if err != nil {
-			return err
-		}
-
-		if res.StatusCode() != http.StatusOK {
-			return errors.New("doesnt sent")
+			a.Logger.Errorln(err)
 		}
 	}
 
@@ -145,6 +168,47 @@ func (a *Agent) SendMetricsArrJSON() error {
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
 		SetBody(metricsJSON)
+
+	res, err := backOff(req, "/updates/", a.Config.BackoffSchedule)
+	if err != nil {
+		a.Logger.Error("Error while sending request")
+		return err
+	}
+	if res.StatusCode() != http.StatusOK {
+		a.Logger.Infoln("get status code", res.StatusCode())
+		return errors.New("StatusCode != OK")
+	}
+	return nil
+}
+
+func (a *Agent) SendMetricsArrJSONwithSign() error {
+	metricsJSON, err := a.Repo.MarshalJSON()
+	if err != nil {
+		a.Logger.Error("Error while marshaling")
+		return err
+	}
+
+	metricsJSON, err = compressor.ToGzip(metricsJSON)
+	if err != nil {
+		a.Logger.Error("Error while compressing")
+		return err
+	}
+
+	req := a.Client.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetBody(metricsJSON)
+
+	signer := hmac.New(sha256.New, []byte(a.Config.Key))
+
+	_, err = signer.Write(metricsJSON)
+
+	if err != nil {
+		a.Logger.Error("Error while signing")
+		return err
+	}
+	req.SetHeader("HashSHA256", hex.EncodeToString(signer.Sum(nil)))
 
 	res, err := backOff(req, "/updates/", a.Config.BackoffSchedule)
 	if err != nil {

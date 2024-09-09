@@ -11,7 +11,11 @@ func main() {
 		panic(err)
 	}
 
-	serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
+	if serv.Config.Key != "" {
+		serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.SingMW(serv.Logger, []byte(serv.Config.Key)), middlewares.CompressorMW(serv.Logger))
+	} else {
+		serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
+	}
 
 	err = serv.Run()
 

@@ -14,6 +14,7 @@ type Config struct {
 	Restore         bool   `env:"RESTORE" envDefault:"true"`           //envvar $RESTORE or envDefault
 	DBdsn           string `env:"DATABASE_DSN"`
 	BackoffSchedule []time.Duration
+	Key             string `env:"KEY" envDefault:""`
 }
 
 func (s *Server) GetConf() error {
@@ -23,15 +24,18 @@ func (s *Server) GetConf() error {
 		return err
 	}
 
-	var fAddress = flag.String("a", s.Config.Address, "enter IP format ip:port")
-	var fStoreInterval = flag.Int("i", s.Config.StoreInterval,
-		"enter interval (in seconds) between all data saved to specified file")
-	var fFileStoragePath = flag.String("f", s.Config.FileStoragePath,
-		"enter path to file where all data will be saved")
-	var fRestore = flag.Bool("r", s.Config.Restore,
-		"whether or not load data to specified file")
-	var fDatabase = flag.String("d", s.Config.DBdsn,
-		"e.g.host=hostname user=username password=pssword dbname=dbname")
+	var (
+		fAddress       = flag.String("a", s.Config.Address, "enter IP format ip:port")
+		fStoreInterval = flag.Int("i", s.Config.StoreInterval,
+			"enter interval (in seconds) between all data saved to specified file")
+		fFileStoragePath = flag.String("f", s.Config.FileStoragePath,
+			"enter path to file where all data will be saved")
+		fRestore = flag.Bool("r", s.Config.Restore,
+			"whether or not load data to specified file")
+		fDatabase = flag.String("d", s.Config.DBdsn,
+			"e.g.host=hostname user=username password=pssword dbname=dbname")
+		fKey = flag.String("k", s.Config.Key, "enter Signatur key")
+	)
 
 	flag.Parse()
 
@@ -50,6 +54,10 @@ func (s *Server) GetConf() error {
 	if s.Config.DBdsn == "" {
 		s.Config.DBdsn = *fDatabase
 	}
+	if s.Config.Key == "" {
+		s.Config.Key = *fKey
+	}
+
 	s.Config.BackoffSchedule = []time.Duration{
 		1 * time.Second,
 		3 * time.Second,
