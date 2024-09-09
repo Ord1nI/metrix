@@ -56,8 +56,6 @@ func (a *Agent) GetConf() {
 		a.Config.Key = *fKey
 	}
 
-	flag.Parse()
-
 	if a.Config.Address == "localhost:8080" {
 		a.Config.Address = *fAddress
 	}
@@ -80,7 +78,7 @@ func (a *Agent) GetConf() {
 		a.Logger.Infoln("PollInterval > ReportInterval")
 	}
 
-	if a.Config.RateLimit == 0 {
+	if a.Config.RateLimit == 1 {
 		a.Config.RateLimit = *fRateLimit
 	}
 }
