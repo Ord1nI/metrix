@@ -1,11 +1,21 @@
 package storage
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func ptrInt(val int64) *int64{
+    return &val
+}
+
+func ptrFloat(val float64) *float64{
+    return &val
+}
 
 func TestAddGauge(t *testing.T) {
 	tests := []struct {
@@ -82,6 +92,7 @@ func TestAddCounter(t *testing.T) {
 		})
 	}
 }
+
 func TestGetGeoge(t *testing.T) {
 	tests := []struct {
 		name string
@@ -121,6 +132,7 @@ func TestGetGeoge(t *testing.T) {
 		})
 	}
 }
+
 func TestGetCounter(t *testing.T) {
 	tests := []struct {
 		name string
@@ -159,4 +171,161 @@ func TestGetCounter(t *testing.T) {
 			assert.Equal(t, nil, err)
 		})
 	}
+}
+
+func TestAddMetric(t *testing.T) {
+    type want struct {
+        metric metrics.Metric
+    }
+    tests := []struct{
+        want want
+        metric metrics.Metric
+    }{
+        {
+            want: want{
+                metric:metrics.Metric{
+                    ID:"name",
+                    MType: "gauge",
+                    Value: ptrFloat(1.5), 
+                },
+            },
+            metric: metrics.Metric{
+                ID:"name",
+                MType: "gauge",
+                Value: ptrFloat(1.5), 
+            },
+        },
+        {
+            want: want{
+                metric:metrics.Metric{
+                    ID:"name2",
+                    MType: "gauge",
+                    Value: ptrFloat(1.6), 
+                },
+            },
+            metric: metrics.Metric{
+                ID:"name2",
+                MType: "gauge",
+                Value: ptrFloat(1.6), 
+            },
+        },
+        {
+            want: want{
+                metric:metrics.Metric{
+                    ID:"Cname",
+                    MType: "counter",
+                    Delta:ptrInt(1),
+                },
+            },
+            metric:metrics.Metric{
+                ID:"Cname",
+                MType: "counter",
+                Delta:ptrInt(1),
+            },
+        },
+        {
+            want: want{
+                metric:metrics.Metric{
+                    ID:"Cname",
+                    MType: "counter",
+                    Delta:ptrInt(2),
+                },
+            },
+            metric:metrics.Metric{
+                ID:"Cname",
+                MType: "counter",
+                Delta:ptrInt(1),
+            },
+        },
+    }
+
+    stor := NewMemStorage()
+
+    for v, test := range tests {
+        t.Run(fmt.Sprintf("test %d",v), func(t *testing.T){
+            err := stor.Add("", test.metric)
+            require.NoError(t,err)
+
+            get := metrics.Metric{
+                MType:test.metric.MType,
+            }
+
+            err = stor.Get(test.want.metric.ID, &get)
+            
+            require.NoError(t,err)
+            assert.Equal(t, test.want.metric, get)
+        })
+    }
+}
+
+func TestGetMetrics(t *testing.T) {
+    arr :=  []metrics.Metric{
+        metrics.Metric{
+            ID:"name",
+            MType: "gauge",
+            Value: ptrFloat(1.5), 
+        },
+        metrics.Metric{
+            ID:"name1",
+            MType: "gauge",
+            Value: ptrFloat(2.5), 
+        },
+        metrics.Metric{
+            ID:"name2",
+            MType: "gauge",
+            Value: ptrFloat(3.5), 
+        },
+        metrics.Metric{
+            ID:"name3",
+            MType: "gauge",
+            Value: ptrFloat(4.5), 
+        },
+        metrics.Metric{
+            ID:"Cname",
+            MType: "counter",
+            Delta:ptrInt(1),
+        },
+        metrics.Metric{
+            ID:"Cname",
+            MType: "counter",
+            Delta:ptrInt(1),
+        },
+    }
+    arrGet :=  []metrics.Metric{
+        metrics.Metric{
+            ID:"name",
+            MType: "gauge",
+            Value: ptrFloat(1.5), 
+        },
+        metrics.Metric{
+            ID:"name1",
+            MType: "gauge",
+            Value: ptrFloat(2.5), 
+        },
+        metrics.Metric{
+            ID:"name2",
+            MType: "gauge",
+            Value: ptrFloat(3.5), 
+        },
+        metrics.Metric{
+            ID:"name3",
+            MType: "gauge",
+            Value: ptrFloat(4.5), 
+        },
+        metrics.Metric{
+            ID:"Cname",
+            MType: "counter",
+            Delta:ptrInt(2),
+        },
+    }
+
+    stor := NewMemStorage()
+
+    stor.Add("", arr)
+
+    var getArr []metrics.Metric
+
+    stor.Get("", &getArr)
+
+    assert.Equal(t, arrGet, getArr )
 }
