@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
@@ -326,6 +327,8 @@ func TestGetMetrics(t *testing.T) {
     var getArr []metrics.Metric
 
     stor.Get("", &getArr)
+
+    sort.Slice(getArr,func(i,j int) bool {return getArr[i].ID < getArr[j].ID})
 
     assert.Equal(t, arrGet, getArr )
 }
