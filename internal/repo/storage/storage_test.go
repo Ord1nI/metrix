@@ -282,12 +282,12 @@ func TestGetMetrics(t *testing.T) {
             Value: ptrFloat(4.5), 
         },
         metrics.Metric{
-            ID:"Cname",
+            ID:"cname",
             MType: "counter",
             Delta:ptrInt(1),
         },
         metrics.Metric{
-            ID:"Cname",
+            ID:"cname",
             MType: "counter",
             Delta:ptrInt(1),
         },
@@ -314,7 +314,7 @@ func TestGetMetrics(t *testing.T) {
             Value: ptrFloat(4.5), 
         },
         metrics.Metric{
-            ID:"Cname",
+            ID:"cname",
             MType: "counter",
             Delta:ptrInt(2),
         },
