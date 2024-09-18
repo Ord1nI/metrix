@@ -262,6 +262,11 @@ func TestAddMetric(t *testing.T) {
 func TestGetMetrics(t *testing.T) {
     arr :=  []metrics.Metric{
         metrics.Metric{
+            ID:"cname",
+            MType: "counter",
+            Delta:ptrInt(1),
+        },
+        metrics.Metric{
             ID:"name",
             MType: "gauge",
             Value: ptrFloat(1.5), 
@@ -280,11 +285,6 @@ func TestGetMetrics(t *testing.T) {
             ID:"name3",
             MType: "gauge",
             Value: ptrFloat(4.5), 
-        },
-        metrics.Metric{
-            ID:"cname",
-            MType: "counter",
-            Delta:ptrInt(1),
         },
         metrics.Metric{
             ID:"cname",
@@ -294,6 +294,11 @@ func TestGetMetrics(t *testing.T) {
     }
     arrGet :=  []metrics.Metric{
         metrics.Metric{
+            ID:"cname",
+            MType: "counter",
+            Delta:ptrInt(2),
+        },
+        metrics.Metric{
             ID:"name",
             MType: "gauge",
             Value: ptrFloat(1.5), 
@@ -312,11 +317,6 @@ func TestGetMetrics(t *testing.T) {
             ID:"name3",
             MType: "gauge",
             Value: ptrFloat(4.5), 
-        },
-        metrics.Metric{
-            ID:"cname",
-            MType: "counter",
-            Delta:ptrInt(2),
         },
     }
 
