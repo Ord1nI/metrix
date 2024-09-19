@@ -24,6 +24,9 @@ type Server struct {
 	Logger      logger.Logger
 }
 
+//New constructor for Server
+//Also calls GetConf
+//And adds HeadMW as first middleware
 func New() (*Server, error) {
 	Logger, err := logger.New()
 	if err != nil {
@@ -47,6 +50,7 @@ func New() (*Server, error) {
 	return &s, nil
 }
 
+//Init method that calls initRepo and initRouter.
 func (s *Server) Init() error {
 	err := s.InitRepo()
 	if err != nil {
@@ -58,15 +62,18 @@ func (s *Server) Init() error {
 	return nil
 }
 
+//Add method to add middlewares in server list must be call before Init.
 func (s *Server) Add(mw ...func(http.Handler) http.Handler) error {
 	s.Middlewares = append(s.Middlewares, mw...)
 	return nil
 }
 
+//RunProff method to run profiler
 func (s *Server) RunProff(addres string) {
 	go http.ListenAndServe(addres, nil)
 }
 
+//Run Metho to start server
 func (s *Server) Run() error {
 	err := s.Init()
 	if err != nil {
@@ -80,6 +87,7 @@ func (s *Server) Run() error {
 	return errors.New("router not initialized")
 }
 
+//InitRepo metho to Init Repo base of config and given flags between db and map.
 func (s *Server) InitRepo() error {
 	var errM error
 	if s.Config.DBdsn != "" {
@@ -99,6 +107,7 @@ func (s *Server) InitRepo() error {
 	return errM
 }
 
+//initDB metho that establishes a connection to database.
 func (s *Server) initDB() error {
 	s.Logger.Infoln("Trying connection to database")
 	db, err := database.NewDB(s.Config.DBdsn, time.Millisecond*500)
@@ -123,6 +132,8 @@ func (s *Server) initDB() error {
 	return nil
 }
 
+//initStor method that init map in memory storage.
+//Alos add FileWriterWM base on config.
 func (s *Server) initStor() error {
 	stor := storage.NewMemStorage()
 

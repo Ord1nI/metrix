@@ -15,6 +15,7 @@ type GetAdder interface {
 	Adder
 }
 
+//UpdateJSON Handler tha recieve metric in json and add in to storage.
 func UpdateJSON(s GetAdder) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 
@@ -63,6 +64,7 @@ func UpdateJSON(s GetAdder) APIFunc {
 	return APIFunc(fHandler)
 }
 
+//GetJSON Handler tha recieve metric name in json and add send that metric from storate.
 func GetJSON(s GetAdder) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 
@@ -104,6 +106,7 @@ func GetJSON(s GetAdder) APIFunc {
 	return APIFunc(fHandler)
 }
 
+//UpdatesJSON handler that recieve list of metrics in JSON and add them to storage.
 func UpdatesJSON(s Adder) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 

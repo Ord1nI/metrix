@@ -21,6 +21,10 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
+//To add metric.Gauge use Add("name", Gauge(val)).
+//To add metric.Counter use Add("name", Counter(val)).
+//To add metric.Metric use Add("", metrics.Metric).
+//To add []metric.Metric use Add("", []metrics.Metric).
 func (m *MemStorage) Add(name string, val interface{}) error {
 	switch val := val.(type) {
 	case metrics.Gauge:
@@ -113,6 +117,11 @@ func (m *MemStorage) GetMetric(name, mType string) (*metrics.Metric, bool) {
 	return nil, false
 }
 
+//Get main get fucntion.
+//To get metric.Gauge use Get("name", &Gauge(val)).
+//To get metric.Counter use Get("name", &Counter(val)).
+//To get metric.Metric use Get("", &metrics.Metric).
+//To get []metric.Metric use Get("", &[]metrics.Metric).
 func (m *MemStorage) Get(name string, val interface{}) error {
 	switch value := val.(type) {
 	case *metrics.Gauge:
@@ -216,6 +225,7 @@ func (m *MemStorage) Close() error {
 	return nil
 }
 
+//StartDataSaver method to sava metrics to file every StorageInerval must be run in gorutine.
 func (m *MemStorage) StartDataSaver(StoreInterval int, FileStoragePath string) error {
 	for {
 		time.Sleep(time.Duration(StoreInterval) * time.Second)
