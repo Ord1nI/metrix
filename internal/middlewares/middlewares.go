@@ -48,6 +48,10 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+func (w gzipWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
 type gzipBody struct {
 	gz   *gzip.Reader
 	body io.ReadCloser
@@ -74,10 +78,6 @@ func (b *gzipBody) Close() error {
 		b.gz.Close(),
 		b.body.Close())
 	return err
-}
-
-func (w gzipWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
 }
 
 func CompressorMW(l logger) func(http.Handler) http.Handler {
@@ -191,15 +191,6 @@ type sResponseWriter struct {
 	Signer hash.Hash
 }
 
-type ReqBody struct {
-	*bytes.Buffer
-}
-
-func (r *ReqBody) Close() error {
-	r.Buffer.Reset()
-	return nil
-}
-
 func (rw *sResponseWriter) Write(b []byte) (int, error) {
 	n, err := rw.ResponseWriter.Write(b)
 	_, err1 := rw.Signer.Write(b)
@@ -226,17 +217,12 @@ func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 				}
 
 				bodyBytes, err := io.ReadAll(r.Body)
-
 				if err != nil {
 					l.Infoln("error while reading body", err)
 					handlers.SendInternalError(w)
 					return
 				}
-
 				defer r.Body.Close()
-				r.Body = &ReqBody{
-					Buffer: bytes.NewBuffer(bodyBytes),
-				}
 
 				signer := hmac.New(sha256.New, key)
 				_, err = signer.Write(bodyBytes)
@@ -270,4 +256,34 @@ func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 		}
 		return http.HandlerFunc(f)
 	}
+}
+
+type ReqBody struct {
+	*bytes.Buffer
+}
+
+func(r *ReqBody) Close() error {
+    r.Reset()
+    return nil
+}
+
+func HeadMW(l logger) func(http.Handler) http.Handler{
+	return func(handler http.Handler) http.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) {
+            b, err := io.ReadAll(r.Body)
+            defer r.Body.Close()
+            if err != nil {
+                l.Infoln("Error while signing")
+                handlers.SendInternalError(w)
+                return
+            }
+
+            reqBody := ReqBody{bytes.NewBuffer(b)}
+
+            r.Body = &reqBody
+
+            handler.ServeHTTP(w, r)
+        }
+        return http.HandlerFunc(f)
+    }
 }

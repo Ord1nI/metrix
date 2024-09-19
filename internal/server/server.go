@@ -12,6 +12,7 @@ import (
 	"github.com/Ord1nI/metrix/internal/repo"
 	"github.com/Ord1nI/metrix/internal/repo/database"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
+    _ "net/http/pprof"
 )
 
 type Server struct {
@@ -40,6 +41,8 @@ func New() (*Server, error) {
 	}
 	s.Logger.Infoln("succesfuly getting conf", s.Config)
 
+    s.Add(middlewares.HeadMW(s.Logger))
+
 	return &s, nil
 }
 
@@ -57,6 +60,10 @@ func (s *Server) Init() error {
 func (s *Server) Add(mw ...func(http.Handler) http.Handler) error {
 	s.Middlewares = append(s.Middlewares, mw...)
 	return nil
+}
+
+func(s *Server) RunProff(addres string) {
+    go http.ListenAndServe(addres, nil)
 }
 
 func (s *Server) Run() error {
