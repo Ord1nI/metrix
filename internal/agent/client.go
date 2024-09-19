@@ -17,10 +17,11 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
 
+	"github.com/go-resty/resty/v2"
+
 	"github.com/Ord1nI/metrix/internal/compressor"
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
-	"github.com/go-resty/resty/v2"
 )
 
 func backOff(r *resty.Request, URI string, BackoffSchedule []time.Duration) (res *resty.Response, err error) {

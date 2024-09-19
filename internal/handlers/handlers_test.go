@@ -293,44 +293,43 @@ func TestGetCounter(t *testing.T) {
 
 func TestBackOff(t *testing.T) {
 
-    err1 := NewHandlerError(errors.New("error"),200)
-    err2 := NewHandlerError(errors.New("error2"),200)
+	err1 := NewHandlerError(errors.New("error"), 200)
+	err2 := NewHandlerError(errors.New("error2"), 200)
 
-    backoff := []time.Duration{time.Second, time.Second*10}
+	backoff := []time.Duration{time.Second, time.Second * 10}
 
-    errorH := APIFunc(func(http.ResponseWriter, *http.Request)error{
-        return err1
-    })
+	errorH := APIFunc(func(http.ResponseWriter, *http.Request) error {
+		return err1
+	})
 
-    errorH2 := APIFunc(func(http.ResponseWriter, *http.Request)error{
-        return err2
-    })
+	errorH2 := APIFunc(func(http.ResponseWriter, *http.Request) error {
+		return err2
+	})
 
-    errorH3 := APIFunc(func(http.ResponseWriter, *http.Request)error{
-        return errors.New("not in errl")
-    })
+	errorH3 := APIFunc(func(http.ResponseWriter, *http.Request) error {
+		return errors.New("not in errl")
+	})
 
-    errorL := errors.Join(err1,err2)
+	errorL := errors.Join(err1, err2)
 
-    handler1 := NewAPIHandler(zap.NewNop().Sugar(), errorH, backoff, errorL)
-    handler2 := NewAPIHandler(zap.NewNop().Sugar(), errorH2, backoff, errorL)
-    handler3 := NewAPIHandler(zap.NewNop().Sugar(), errorH3, backoff, errorL)
+	handler1 := NewAPIHandler(zap.NewNop().Sugar(), errorH, backoff, errorL)
+	handler2 := NewAPIHandler(zap.NewNop().Sugar(), errorH2, backoff, errorL)
+	handler3 := NewAPIHandler(zap.NewNop().Sugar(), errorH3, backoff, errorL)
 
-    tn := time.Now()
+	tn := time.Now()
 
-    handler1.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
-    te := time.Since(tn)
-    assert.Greater(t,te,time.Second *10)
+	handler1.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
+	te := time.Since(tn)
+	assert.Greater(t, te, time.Second*10)
 
-    tn = time.Now()
-    handler2.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
-    te = time.Since(tn)
-    assert.Greater(t,te,time.Second*10)
+	tn = time.Now()
+	handler2.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
+	te = time.Since(tn)
+	assert.Greater(t, te, time.Second*10)
 
-    tn = time.Now()
-    handler3.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
-    te = time.Since(tn)
-    assert.Less(t,te,time.Second* 10)
-
+	tn = time.Now()
+	handler3.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
+	te = time.Since(tn)
+	assert.Less(t, te, time.Second*10)
 
 }

@@ -65,34 +65,34 @@ const html = `<html>
 </body>
 </html>`
 
-const json =`{  
+const json = `{  
         "employee": {  
             "name":       "sonoo",   
             "salary":      56000,   
             "married":    true  
         }  
-    }` 
+    }`
 
-func HandlerMock(w http.ResponseWriter, r* http.Request) {
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte(html))
+func HandlerMock(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(html))
 }
 
 func BenchmarkCompressor(b *testing.B) {
-    buf := bytes.NewBuffer(nil)
-    gz := gzip.NewWriter(buf)
-    gz.Write([]byte(json))
-    defer gz.Close()
+	buf := bytes.NewBuffer(nil)
+	gz := gzip.NewWriter(buf)
+	gz.Write([]byte(json))
+	defer gz.Close()
 
-    req := httptest.NewRequest(http.MethodGet,"/ping",buf)
-    req.Header.Add("Accept-Encoding", "gzip")
-    req.Header.Add("Accept", "html")
+	req := httptest.NewRequest(http.MethodGet, "/ping", buf)
+	req.Header.Add("Accept-Encoding", "gzip")
+	req.Header.Add("Accept", "html")
 
-    testF := CompressorMW(zap.NewNop().Sugar())(http.HandlerFunc(HandlerMock))
+	testF := CompressorMW(zap.NewNop().Sugar())(http.HandlerFunc(HandlerMock))
 
-    recorder := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-    b.Run("compressing test", func(b *testing.B){
-        testF.ServeHTTP(recorder, req)
-    })
+	b.Run("compressing test", func(b *testing.B) {
+		testF.ServeHTTP(recorder, req)
+	})
 }

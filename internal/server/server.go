@@ -7,12 +7,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	_ "net/http/pprof"
+
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/middlewares"
 	"github.com/Ord1nI/metrix/internal/repo"
 	"github.com/Ord1nI/metrix/internal/repo/database"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
-    _ "net/http/pprof"
 )
 
 type Server struct {
@@ -41,7 +42,7 @@ func New() (*Server, error) {
 	}
 	s.Logger.Infoln("succesfuly getting conf", s.Config)
 
-    s.Add(middlewares.HeadMW(s.Logger))
+	s.Add(middlewares.HeadMW(s.Logger))
 
 	return &s, nil
 }
@@ -62,8 +63,8 @@ func (s *Server) Add(mw ...func(http.Handler) http.Handler) error {
 	return nil
 }
 
-func(s *Server) RunProff(addres string) {
-    go http.ListenAndServe(addres, nil)
+func (s *Server) RunProff(addres string) {
+	go http.ListenAndServe(addres, nil)
 }
 
 func (s *Server) Run() error {

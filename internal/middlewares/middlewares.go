@@ -262,28 +262,28 @@ type ReqBody struct {
 	*bytes.Buffer
 }
 
-func(r *ReqBody) Close() error {
-    r.Reset()
-    return nil
+func (r *ReqBody) Close() error {
+	r.Reset()
+	return nil
 }
 
-func HeadMW(l logger) func(http.Handler) http.Handler{
+func HeadMW(l logger) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
-            b, err := io.ReadAll(r.Body)
-            defer r.Body.Close()
-            if err != nil {
-                l.Infoln("Error while signing")
-                handlers.SendInternalError(w)
-                return
-            }
+			b, err := io.ReadAll(r.Body)
+			defer r.Body.Close()
+			if err != nil {
+				l.Infoln("Error while signing")
+				handlers.SendInternalError(w)
+				return
+			}
 
-            reqBody := ReqBody{bytes.NewBuffer(b)}
+			reqBody := ReqBody{bytes.NewBuffer(b)}
 
-            r.Body = &reqBody
+			r.Body = &reqBody
 
-            handler.ServeHTTP(w, r)
-        }
-        return http.HandlerFunc(f)
-    }
+			handler.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(f)
+	}
 }
