@@ -34,15 +34,8 @@ func Example() {
     server := httptest.NewServer(mux)
     defer server.Close()
 
-    //Create request
-    request,_ := http.NewRequest(http.MethodGet, "/update/", bytes.NewBuffer(metricJSON))
-    request.Header.Add("Content-Type", "application/json")
-
-    //Create client
-    client := http.Client{}
-
     //Send request
-    res, _ := client.Do(request)
+    res, _  := http.Post(server.URL+"/update/","application/json",bytes.NewBuffer(metricJSON))
 
     //Read response
     byteRes, _ := io.ReadAll(res.Body)
@@ -52,10 +45,12 @@ func Example() {
     //Result
     var resultMetric metrics.Metric
     json.Unmarshal(byteRes, &resultMetric)
-    fmt.Println(resultMetric)
+    fmt.Println(resultMetric.ID)
+    fmt.Println(resultMetric.MType)
+    fmt.Println(*resultMetric.Value)
 
     //Output:
-    //ID:"name"
-    //MType:"gauge"
-    //Value:1.312
+    //name
+    //gauge
+    //1.312
 }

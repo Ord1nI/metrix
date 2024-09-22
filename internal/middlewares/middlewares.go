@@ -49,6 +49,7 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+//Write implementation of writer interface that write compressed data.
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
@@ -262,11 +263,11 @@ func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 	}
 }
 
-type ReqBody struct {
+type reqBody struct {
 	*bytes.Buffer
 }
 
-func (r *ReqBody) Close() error {
+func (r *reqBody) Close() error {
 	r.Reset()
 	return nil
 }
@@ -285,7 +286,7 @@ func HeadMW(l logger) func(http.Handler) http.Handler {
 				return
 			}
 
-			reqBody := ReqBody{bytes.NewBuffer(b)}
+			reqBody := reqBody{bytes.NewBuffer(b)}
 
 			r.Body = &reqBody
 
