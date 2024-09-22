@@ -54,4 +54,8 @@ func Example() {
     json.Unmarshal(byteRes, &resultMetric)
     fmt.Println(resultMetric)
 
+    //Output:
+    //ID:"name"
+    //MType:"gauge"
+    //Value:1.312
 }
