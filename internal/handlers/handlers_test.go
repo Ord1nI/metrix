@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
 	// "github.com/stretchr/testify/require"
 
 	"errors"
@@ -14,20 +18,6 @@ import (
 
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 )
-
-func JustMake(f APIFunc) http.Handler {
-	fun := func(w http.ResponseWriter, r *http.Request) {
-		if err := f(w, r); err != nil {
-			if apiErr, ok := err.(*HandlerError); ok {
-				http.Error(w, apiErr.Error(), apiErr.StatusCode)
-				return
-			} else {
-				http.Error(w, "internal server error", http.StatusInternalServerError)
-			}
-		}
-	}
-	return http.HandlerFunc(fun)
-}
 
 type storageMock struct {
 	val   float64
@@ -97,7 +87,7 @@ func TestUpdateGauge(t *testing.T) {
 	}
 
 	r := chi.NewRouter()
-	r.Method(http.MethodPost, "/update/gauge/{name}/{val}", JustMake(UpdateGauge(&storageMock{})))
+	r.Method(http.MethodPost, "/update/gauge/{name}/{val}", APIFunc((UpdateGauge(&storageMock{}))))
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -160,7 +150,7 @@ func TestUpdateCounter(t *testing.T) {
 	}
 	r := chi.NewRouter()
 	stor := &storageMock{}
-	r.Method(http.MethodPost, "/update/counter/{name}/{val}", JustMake(UpdateCounter(stor)))
+	r.Method(http.MethodPost, "/update/counter/{name}/{val}", APIFunc(UpdateCounter(stor)))
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, test.reqURL, nil)
@@ -214,7 +204,7 @@ func TestGetGauge(t *testing.T) {
 	stor := &storageMock{}
 
 	r := chi.NewRouter()
-	r.Method(http.MethodPost, "/value/gauge/{name}", JustMake(GetGauge(stor)))
+	r.Method(http.MethodPost, "/value/gauge/{name}", APIFunc(GetGauge(stor)))
 
 	for _, test := range tests {
 		stor.val = test.val
@@ -274,7 +264,7 @@ func TestGetCounter(t *testing.T) {
 	stor := &storageMock{}
 
 	r := chi.NewRouter()
-	r.Method(http.MethodPost, "/value/counter/{name}", JustMake(GetCounter(stor)))
+	r.Method(http.MethodPost, "/value/counter/{name}", APIFunc(GetCounter(stor)))
 
 	for _, test := range tests {
 		stor.val = test.val
@@ -299,4 +289,47 @@ func TestGetCounter(t *testing.T) {
 			res.Body.Close()
 		})
 	}
+}
+
+func TestBackOff(t *testing.T) {
+
+	err1 := NewHandlerError(errors.New("error"), 200)
+	err2 := NewHandlerError(errors.New("error2"), 200)
+
+	backoff := []time.Duration{time.Second, time.Second * 10}
+
+	errorH := APIFunc(func(http.ResponseWriter, *http.Request) error {
+		return err1
+	})
+
+	errorH2 := APIFunc(func(http.ResponseWriter, *http.Request) error {
+		return err2
+	})
+
+	errorH3 := APIFunc(func(http.ResponseWriter, *http.Request) error {
+		return errors.New("not in errl")
+	})
+
+	errorL := errors.Join(err1, err2)
+
+	handler1 := NewAPIHandler(zap.NewNop().Sugar(), errorH, backoff, errorL)
+	handler2 := NewAPIHandler(zap.NewNop().Sugar(), errorH2, backoff, errorL)
+	handler3 := NewAPIHandler(zap.NewNop().Sugar(), errorH3, backoff, errorL)
+
+	tn := time.Now()
+
+	handler1.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
+	te := time.Since(tn)
+	assert.Greater(t, te, time.Second*10)
+
+	tn = time.Now()
+	handler2.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
+	te = time.Since(tn)
+	assert.Greater(t, te, time.Second*10)
+
+	tn = time.Now()
+	handler3.ServeHTTP(&httptest.ResponseRecorder{}, &http.Request{})
+	te = time.Since(tn)
+	assert.Less(t, te, time.Second*10)
+
 }

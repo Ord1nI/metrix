@@ -6,11 +6,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	// "go.uber.org/zap"
 
 	"bytes"
 	"encoding/json"
 	"errors"
+
 	// "io"
 	"net/http"
 	"net/http/httptest"
@@ -88,8 +90,8 @@ func ptrToFloat(d float64) *float64 {
 func Test(t *testing.T) {
 
 	r := chi.NewRouter()
-	r.Method(http.MethodPost, "/update/", JustMake(UpdateJSON(&storageMock2{})))
-	r.Method(http.MethodPost, "/value/", JustMake(GetJSON(&storageMock2{})))
+	r.Method(http.MethodPost, "/update/", APIFunc(UpdateJSON(&storageMock2{})))
+	r.Method(http.MethodPost, "/value/", APIFunc(GetJSON(&storageMock2{})))
 
 	TUpdateJSON(t, r)
 

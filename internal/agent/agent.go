@@ -1,9 +1,10 @@
 package agent
 
 import (
+	"github.com/go-resty/resty/v2"
+
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
-	"github.com/go-resty/resty/v2"
 )
 
 type Agent struct {

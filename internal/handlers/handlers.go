@@ -27,8 +27,10 @@ var (
 	ErrSQLconnectionException error = errors.New(pgerrcode.ConnectionException)
 )
 
+//APIFunc custom HandlerFunc that can return error.
 type APIFunc func(http.ResponseWriter, *http.Request) error
 
+//ServeHTTP method to implementat http.Handler interface.
 func (a APIFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := a(w, r)
 	if err != nil {
@@ -42,11 +44,13 @@ func (a APIFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//HandlerError cunstom err for http response.
 type HandlerError struct {
 	StatusCode int
 	Err        error
 }
 
+//NewHandlerError HandlerError constructor.
 func NewHandlerError(err error, status int) error {
 	return &HandlerError{
 		Err:        err,
@@ -66,6 +70,7 @@ func SendHandlerError(r http.ResponseWriter, err *HandlerError) {
 	http.Error(r, err.Error(), err.StatusCode)
 }
 
+//APIHandler custom Handler type to implement backoff functionality.
 type APIHandler struct {
 	l              logger.Logger
 	f              func(http.ResponseWriter, *http.Request) error
@@ -73,6 +78,7 @@ type APIHandler struct {
 	BackOffErrors  error
 }
 
+//NewAPIHandler constructor.
 func NewAPIHandler(l logger.Logger, f APIFunc, backOffSchedule []time.Duration, errorList error) *APIHandler {
 	return &APIHandler{
 		l:              l,
@@ -82,6 +88,7 @@ func NewAPIHandler(l logger.Logger, f APIFunc, backOffSchedule []time.Duration, 
 	}
 }
 
+//ServeHTTP method to implementat http.Handler interface.
 func (a *APIHandler) ServeHTTP(res http.ResponseWriter, r *http.Request) {
 	if err := a.f(res, r); err != nil {
 		a.l.Infoln("Got Error: ", err)
@@ -113,6 +120,7 @@ func (a *APIHandler) ServeHTTP(res http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//BackOff method that truy to recover function error.
 func (a *APIHandler) BackOff(res http.ResponseWriter, r *http.Request) bool {
 	a.l.Infoln("Trying backoff handler")
 	for _, backoff := range a.BackOffScedule {
@@ -130,6 +138,7 @@ type Adder interface {
 	Add(name string, val interface{}) error
 }
 
+//UpdateGauge Handler that receive Gauge metrics with url adress. 
 func UpdateGauge(s Adder) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 		name := chi.URLParam(req, "name")
@@ -148,6 +157,7 @@ func UpdateGauge(s Adder) APIFunc {
 	return APIFunc(fHandler)
 }
 
+//UpdateCounter Handler that receive Counter metrics with url adress. 
 func UpdateCounter(s Adder) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 
@@ -171,6 +181,7 @@ type Getter interface {
 	Get(name string, val interface{}) error
 }
 
+//GetGauge Handler that send Gauge metric value (with url adress).
 func GetGauge(s Getter) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 		name := chi.URLParam(req, "name")
@@ -189,6 +200,7 @@ func GetGauge(s Getter) APIFunc {
 	return APIFunc(fHandler)
 }
 
+//GetCounter Handler that send Counter metric value (with url adress).
 func GetCounter(s Getter) APIFunc {
 
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
@@ -208,6 +220,7 @@ func GetCounter(s Getter) APIFunc {
 	return APIFunc(fHandler)
 }
 
+//MainPage sent http response with sorted list of all metrics.
 func MainPage(m json.Marshaler) APIFunc {
 	fHandler := func(res http.ResponseWriter, req *http.Request) error {
 

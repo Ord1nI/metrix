@@ -36,11 +36,13 @@ func (db *Database) Ping() error {
 	return db.DB.PingContext(childCtx)
 }
 
+//NewDb constructor for Database.
 func NewDB(dsn string, waitTime time.Duration) (*Database, error) {
 	db, err := sql.Open("pgx", dsn)
 	return &Database{db, waitTime}, err
 }
 
+//CreateTable method to create TABLE metrix in database if it is not there.
 func (db *Database) CreateTable() error {
 	childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
 	defer cancel()
@@ -55,9 +57,13 @@ func (db *Database) CreateTable() error {
 	return nil
 }
 
+//Add main add function.
+//To add metric.Gauge use Add("name", Gauge(val))
+//To add metric.Counter use Add("name", Counter(val))
+//To add metric.Metric use Add("", metrics.Metric)
+//To add []metric.Metric use Add("", []metrics.Metric)
 func (db *Database) Add(name string, val interface{}) error {
 	var err error
-
 	switch val := val.(type) {
 	case metrics.Gauge:
 		childCtx, cancel := context.WithTimeout(context.Background(), db.WaitTime)
@@ -77,6 +83,11 @@ func (db *Database) Add(name string, val interface{}) error {
 	return errors.New("incorect metric type")
 }
 
+//Get main get fucntion.
+//To get metric.Gauge use Get("name", &Gauge(val))
+//To get metric.Counter use Get("name", &Counter(val))
+//To get metric.Metric use Get("", &metrics.Metric)
+//To get []metric.Metric use Get("", &[]metrics.Metric)
 func (db *Database) Get(name string, val interface{}) error {
 	switch value := val.(type) {
 	case *metrics.Gauge:
