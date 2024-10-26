@@ -42,14 +42,14 @@ func ptrInt(d int64) *int64 {
 
 func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
 	type want struct {
-		code   int
-		res    string
 		metric metrics.Metric
+		res    string
+		code   int
 	}
 
 	tests := []struct {
-		name   string
 		metric metrics.Metric
+		name   string
 		want   want
 	}{
 		{
@@ -157,14 +157,14 @@ func tUpdateJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
 }
 func tGetJSON(t *testing.T, serv *httptest.Server, client *http.Client) {
 	type want struct {
-		code   int
-		res    string
 		metric metrics.Metric
+		res    string
+		code   int
 	}
 
 	tests := []struct {
-		name   string
 		metric metrics.Metric
+		name   string
 		want   want
 	}{
 		{

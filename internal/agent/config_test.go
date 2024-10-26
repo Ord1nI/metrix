@@ -11,18 +11,18 @@ import (
 func TestConfig(t *testing.T) {
 	type want struct {
 		Address        string
+		Key            string
 		PollInterval   int64
 		ReportInterval int64
-		Key            string
 		RateLimit      int
 	}
 	tests := []struct {
-		want           want
 		Address        string
 		PollInterval   string
 		ReportInterval string
 		Key            string
 		RateLimit      string
+		want           want
 	}{
 		{
 			want: want{

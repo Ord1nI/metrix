@@ -2,7 +2,6 @@ package main
 
 import (
 	"go/ast"
-
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -12,11 +11,9 @@ var ErrCheckAnalyzer = &analysis.Analyzer{
     Run:  run,
 }
 
-
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, f := range pass.Files {
 		if f.Name.Name == "main" {
-
 			ast.Inspect(f, func(n ast.Node) bool {
 				if fd, ok := n.(*ast.FuncDecl);ok && fd.Name.Name == "main"{
 					for _, stm := range fd.Body.List {
@@ -39,7 +36,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				return true
 			})
 		}
-		break
 	}
 	return nil, nil
 }

@@ -1,3 +1,4 @@
+//Package compressor to compress and uncompress with gzip.
 package compressor
 
 import (
@@ -5,6 +6,7 @@ import (
 	"compress/gzip"
 )
 
+//ToGzip compress []byte with gzip.
 func ToGzip(data []byte) ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -25,6 +27,7 @@ func ToGzip(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+//FromGzip uncompress []byte with gzip
 func FromGzip(data []byte) ([]byte, error) {
 	r, err := gzip.NewReader(bytes.NewReader(data))
 

@@ -1,3 +1,5 @@
+//Package storage contains MemStorage class to
+//contain collected metrics.
 package storage
 
 import (
@@ -9,6 +11,7 @@ import (
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 )
 
+//MemStorage class to contains metrics.
 type MemStorage struct {
 	Gauge   *MGauge
 	Counter *MCounter
@@ -21,6 +24,7 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
+//Add method to add metric to MemStorage storage.
 //To add metric.Gauge use Add("name", Gauge(val)).
 //To add metric.Counter use Add("name", Counter(val)).
 //To add metric.Metric use Add("", metrics.Metric).

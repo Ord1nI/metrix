@@ -22,9 +22,9 @@ import (
 )
 
 type storageMock2 struct {
-	val   float64
 	name  string
 	mtype string
+	val   float64
 }
 
 func (s *storageMock2) Add(name string, v interface{}) error {
@@ -100,13 +100,13 @@ func Test(t *testing.T) {
 func TUpdateJSON(t *testing.T, r chi.Router) {
 
 	type want struct {
-		code      int
-		response  string
 		responseM metrics.Metric
+		response  string
+		code      int
 	}
 	tests := []struct {
-		name   string
 		metric metrics.Metric
+		name   string
 		want   want
 	}{
 		{
@@ -241,13 +241,13 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
 func TGetJSON(t *testing.T, r chi.Router) {
 
 	type want struct {
-		code      int
-		response  string
 		responseM metrics.Metric
+		response  string
+		code      int
 	}
 	tests := []struct {
-		name   string
 		metric metrics.Metric
+		name   string
 		want   want
 	}{
 		{

@@ -1,3 +1,4 @@
+//Package middlewares collection of different middlewares.
 package middlewares
 
 import (
@@ -26,7 +27,7 @@ type logger interface {
 	Infoln(args ...interface{})
 }
 
-//FileWriterWM middleware that dump MemStorage to file within specified interval of time.
+// FileWriterWM middleware that dump MemStorage to file within specified interval of time.
 func FileWriterWM(logger logger, stor fileWriter, path string) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +50,7 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
-//Write implementation of writer interface that write compressed data.
+// Write implementation of writer interface that write compressed data.
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
@@ -82,7 +83,7 @@ func (b *gzipBody) Close() error {
 	return err
 }
 
-//CompressorMW middleware to Decompress gzip and compress gzip if needed.
+// CompressorMW middleware to Decompress gzip and compress gzip if needed.
 func CompressorMW(l logger) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -132,8 +133,8 @@ type (
 
 	loggingResponseWriter struct {
 		http.ResponseWriter
-		body         []byte
 		responseData *responseData
+		body         []byte
 	}
 )
 
@@ -162,7 +163,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
-//LoggerMW middleware for basic logging.
+// LoggerMW middleware for basic logging.
 func LoggerMW(logger logger) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		logFn := func(w http.ResponseWriter, r *http.Request) {
@@ -201,7 +202,7 @@ func (rw *sResponseWriter) Write(b []byte) (int, error) {
 	return n, errors.Join(err, err1)
 }
 
-//SingMW middleware for verify request signature and sign response with given key.
+// SingMW middleware for verify request signature and sign response with given key.
 func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
@@ -272,9 +273,9 @@ func (r *reqBody) Close() error {
 	return nil
 }
 
-//HeadMW middleware that convert request.body to bytes.buffer.
-//That allow to read request.body several times.
-//Must be first in middleware list.
+// HeadMW middleware that convert request.body to bytes.buffer.
+// That allow to read request.body several times.
+// Must be first in middleware list.
 func HeadMW(l logger) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
@@ -286,9 +287,9 @@ func HeadMW(l logger) func(http.Handler) http.Handler {
 				return
 			}
 
-			reqBody := reqBody{bytes.NewBuffer(b)}
+			rBody := reqBody{bytes.NewBuffer(b)}
 
-			r.Body = &reqBody
+			r.Body = &rBody
 
 			handler.ServeHTTP(w, r)
 		}

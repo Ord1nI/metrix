@@ -8,7 +8,7 @@ import (
 	"github.com/Ord1nI/metrix/internal/repo/database"
 )
 
-//PIngDB Handler to know status of database connection.
+//PingDB Handler to know status of database connection.
 func PingDB(r repo.Repo) APIFunc {
 	hf := func(res http.ResponseWriter, req *http.Request) error {
 		v, ok := r.(*database.Database)

@@ -25,8 +25,8 @@ func TestCompressor(t *testing.T) {
 	}
 
 	tests := []struct {
-		contentType []CT
 		want        want
+		contentType []CT
 		code        int
 	}{
 		{
