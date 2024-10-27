@@ -202,8 +202,8 @@ func (rw *sResponseWriter) Write(b []byte) (int, error) {
 	return n, errors.Join(err, err1)
 }
 
-// SingMW middleware for verify request signature and sign response with given key.
-func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
+// SignMW middleware for verify request signature and sign response with given key.
+func SignMW(l logger, key []byte) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
 			stringHash := r.Header.Get("HashSHA256")
@@ -228,6 +228,7 @@ func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 					handlers.SendInternalError(w)
 					return
 				}
+
 				defer r.Body.Close()
 
 				signer := hmac.New(sha256.New, key)
@@ -253,6 +254,7 @@ func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 				srw := &sResponseWriter{w, signer}
 
 				l.Infoln("Request accepted")
+
 				handler.ServeHTTP(srw, r)
 
 				w.Header().Add("HashSHA256", hex.EncodeToString(srw.Signer.Sum(nil)))
