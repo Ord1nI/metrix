@@ -23,4 +23,6 @@ func TestPingDB(t *testing.T) {
 	f.ServeHTTP(recorder,req)
 
 	assert.Equal(t,http.StatusBadRequest, recorder.Result().StatusCode)
+
+	recorder.Result().Body.Close()
 }
