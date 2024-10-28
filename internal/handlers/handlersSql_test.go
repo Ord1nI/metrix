@@ -15,9 +15,9 @@ import (
 func TestPingDB(t *testing.T) {
 	var db repo.Repo
 
+	f := PingDB(db)
 	r := chi.NewRouter()
 
-	f := PingDB(db)
 	r.Method(http.MethodGet, "/", f)
 
 	req := httptest.NewRequest(http.MethodGet,"/", bytes.NewBuffer(nil))
@@ -27,8 +27,8 @@ func TestPingDB(t *testing.T) {
 	r.ServeHTTP(recorder,req)
 
 	res := recorder.Result()
-	res.Body.Close()
 
 	assert.Equal(t,http.StatusBadRequest, recorder.Result().StatusCode)
 
+	res.Body.Close()
 }
