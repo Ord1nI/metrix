@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/hmac"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -22,9 +24,7 @@ type fileWriter interface {
 }
 
 type logger interface {
-	Errorln(args ...interface{})
-	Infoln(args ...interface{})
-}
+	Errorln(args ...interface{}) Infoln(args ...interface{})}
 
 //FileWriterWM middleware that dump MemStorage to file within specified interval of time.
 func FileWriterWM(logger logger, stor fileWriter, path string) func(http.Handler) http.Handler {
@@ -260,6 +260,28 @@ func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 			}
 		}
 		return http.HandlerFunc(f)
+	}
+}
+
+func Crypt(l logger, privateKey *rsa.PrivateKey) func(http.Handler) http.Handler {
+	return func(http.Handler) http.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				l.Infoln("Error while reading body")
+				handlers.SendInternalError(w)
+			}
+
+			decryptedBody, err := rsa.DecryptPKCS1v15(rand.Reader,privateKey,body)
+			if err != nil {
+				l.Infoln("Error while Decryption with private key")
+				handlers.SendInternalError(w)
+			}
+
+			r.Body = reqBody := reqBody{bytes.NewBuffer(decryptedBody)}
+
+			privateKey.Validate()
+		}
 	}
 }
 
