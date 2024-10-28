@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/Ord1nI/metrix/internal/handlers"
+	"github.com/Ord1nI/metrix/internal/utils"
 )
 
 type fileWriter interface {
@@ -24,7 +25,10 @@ type fileWriter interface {
 }
 
 type logger interface {
-	Errorln(args ...interface{}) Infoln(args ...interface{})}
+	Errorln(args ...interface{})
+	Fatal(args ...interface{})
+	Infoln(args ...interface{})
+}
 
 //FileWriterWM middleware that dump MemStorage to file within specified interval of time.
 func FileWriterWM(logger logger, stor fileWriter, path string) func(http.Handler) http.Handler {
@@ -263,7 +267,11 @@ func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 	}
 }
 
-func Decrypt(l logger, privateKey *rsa.PrivateKey) func(http.Handler) http.Handler {
+func Decrypt(l logger, privateKeyPath string) func(http.Handler) http.Handler {
+	privateKey, err := utils.ReadPrivatePEM(privateKeyPath)
+	if err != nil {
+		l.Fatal("error while reading private key")
+	}
 	return func(http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
 			body, err := io.ReadAll(r.Body)
@@ -275,13 +283,14 @@ func Decrypt(l logger, privateKey *rsa.PrivateKey) func(http.Handler) http.Handl
 			decryptedBody, err := rsa.DecryptPKCS1v15(rand.Reader,privateKey,body)
 			if err != nil {
 				l.Infoln("Error while Decryption with private key")
-				handlers.SendInternalError(w)
+				http.Error(w, "Bad request", http.StatusBadRequest)
 			}
 
-			r.Body = reqBody := reqBody{bytes.NewBuffer(decryptedBody)}
+			r.Body = &reqBody{bytes.NewBuffer(decryptedBody)}
 
 			privateKey.Validate()
 		}
+		return http.HandlerFunc(f)
 	}
 }
 

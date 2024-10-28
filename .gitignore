@@ -35,3 +35,6 @@ go.work.sum
 .vscode
 
 internal/handlers/handlersSql_test.go
+
+#Keys
+*.pem

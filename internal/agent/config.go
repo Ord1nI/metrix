@@ -61,7 +61,7 @@ func (a *Agent) GetConf() {
 	}
 
 	if a.Config.PublicKeyFile == "" {
-		a.Config.Key = *fPublicKeyFile
+		a.Config.PublicKeyFile = *fPublicKeyFile
 	}
 
 	if a.Config.Address == "localhost:8080" {

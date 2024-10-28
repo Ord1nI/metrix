@@ -38,7 +38,7 @@ func (s *Server) GetConf() error {
 			"e.g.host=hostname user=username password=pssword dbname=dbname")
 		fKey = flag.String("k", s.Config.Key, "enter Signatur key")
 
-		fPrivateKeyFile = flag.String("crypto-key", a.Config.PublicKeyFile, "enter location of file with private key")
+		fPrivateKeyFile = flag.String("crypto-key", s.Config.PrivateKeyFile, "enter location of file with private key")
 	)
 
 	flag.Parse()
@@ -63,7 +63,7 @@ func (s *Server) GetConf() error {
 	}
 
 	if s.Config.PrivateKeyFile == "" {
-		s.Config.Key = *fPrivateKeyFile
+		s.Config.PrivateKeyFile = *fPrivateKeyFile
 	}
 
 	s.Config.BackoffSchedule = []time.Duration{
