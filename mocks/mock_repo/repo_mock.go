@@ -6,7 +6,6 @@ package mock_repo
 
 import (
 	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -82,10 +81,4 @@ func (m *MockRepo) MarshalJSON() ([]byte, error) {
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
-}
-
-// MarshalJSON indicates an expected call of MarshalJSON.
-func (mr *MockRepoMockRecorder) MarshalJSON() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarshalJSON", reflect.TypeOf((*MockRepo)(nil).MarshalJSON))
 }

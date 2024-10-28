@@ -1,3 +1,5 @@
+// +build !codeanalysis
+
 //Package middlewares collection of different middlewares.
 package middlewares
 
