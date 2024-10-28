@@ -263,7 +263,7 @@ func SingMW(l logger, key []byte) func(http.Handler) http.Handler {
 	}
 }
 
-func Crypt(l logger, privateKey *rsa.PrivateKey) func(http.Handler) http.Handler {
+func Decrypt(l logger, privateKey *rsa.PrivateKey) func(http.Handler) http.Handler {
 	return func(http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
 			body, err := io.ReadAll(r.Body)
