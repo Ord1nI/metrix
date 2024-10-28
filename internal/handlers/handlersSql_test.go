@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/Ord1nI/metrix/internal/repo"
-
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPingDB(t *testing.T) {
@@ -21,10 +20,8 @@ func TestPingDB(t *testing.T) {
 
 	f.ServeHTTP(recorder,req)
 
-	res := recorder.Result()
+	defer recorder.Result().Body.Close()
+	defer req.Body.Close()
 
-	defer res.Body.Close()
-
-	assert.Equal(t,http.StatusBadRequest, recorder.Result().StatusCode)
-
+	require.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
 }
