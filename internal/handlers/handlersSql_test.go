@@ -1,28 +1,31 @@
 package handlers
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
-	"bytes"
 	"testing"
 
 	"github.com/Ord1nI/metrix/internal/repo"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPingDB(t *testing.T) {
 	var db repo.Repo
+
+	r := chi.NewRouter()
+
 	f := PingDB(db)
+	r.Method(http.MethodGet, "/", f)
 
-
-	recorder := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet,"/", bytes.NewBuffer(nil))
 
+	recorder := httptest.NewRecorder()
 
-	f.ServeHTTP(recorder,req)
+	r.ServeHTTP(recorder,req)
 
 	assert.Equal(t,http.StatusBadRequest, recorder.Result().StatusCode)
 
-	recorder.Result().Body.Close()
 }
