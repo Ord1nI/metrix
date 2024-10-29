@@ -73,6 +73,7 @@ func GetJSON(s GetAdder) APIFunc {
 		}
 
 		data, err := io.ReadAll(req.Body)
+
 		req.Body.Close()
 
 		if err != nil {

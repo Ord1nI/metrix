@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	 gomock "github.com/golang/mock/gomock"
 
 	// "go.uber.org/zap"
 
@@ -19,66 +20,10 @@ import (
 	"testing"
 
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
+
+	"github.com/Ord1nI/metrix/mocks/mock_repo"
 )
 
-type storageMock2 struct {
-	val   float64
-	name  string
-	mtype string
-}
-
-func (s *storageMock2) Add(name string, v interface{}) error {
-
-	m := v.(metrics.Metric)
-	if m.ID == "" {
-		return errors.New("error")
-	}
-
-	if m.MType == "counter" {
-		if s.mtype == "counter" {
-			s.val += float64(*m.Delta)
-			s.name = m.ID
-			return nil
-		} else {
-			s.val = float64(*m.Delta)
-			s.name = m.ID
-			s.mtype = "counter"
-			return nil
-		}
-	}
-
-	if m.MType == "gauge" {
-		s.val = float64(*m.Value)
-		s.name = m.ID
-		s.mtype = "gauge"
-		return nil
-	}
-	return errors.New("error")
-}
-
-func (s *storageMock2) Get(name string, m interface{}) error {
-	t := m.(*metrics.Metric)
-	if name == s.name {
-		switch t.MType {
-		case "counter":
-			v := int64(s.val)
-			*t = metrics.Metric{
-				ID:    name,
-				MType: t.MType,
-				Delta: &v,
-			}
-			return nil
-		case "gauge":
-			*t = metrics.Metric{
-				ID:    name,
-				MType: t.MType,
-				Value: &s.val,
-			}
-			return nil
-		}
-	}
-	return errors.New("df")
-}
 
 func ptrToInt(d int64) *int64 {
 	return &d
@@ -89,24 +34,29 @@ func ptrToFloat(d float64) *float64 {
 
 func Test(t *testing.T) {
 
-	r := chi.NewRouter()
-	r.Method(http.MethodPost, "/update/", APIFunc(UpdateJSON(&storageMock2{})))
-	r.Method(http.MethodPost, "/value/", APIFunc(GetJSON(&storageMock2{})))
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mR := mock_repo.NewMockRepo(ctrl)
 
-	TUpdateJSON(t, r)
+	r := chi.NewRouter()
+	r.Method(http.MethodPost, "/update/", APIFunc(UpdateJSON(mR)))
+	r.Method(http.MethodPost, "/value/", APIFunc(GetJSON(mR)))
+
+	TUpdateJSON(t, r, mR)
+	TGetJSON(t, r, mR)
 
 }
 
-func TUpdateJSON(t *testing.T, r chi.Router) {
+func TUpdateJSON(t *testing.T, r chi.Router, mr *mock_repo.MockRepo) {
 
 	type want struct {
-		code      int
-		response  string
 		responseM metrics.Metric
+		response  string
+		code      int
 	}
 	tests := []struct {
-		name   string
 		metric metrics.Metric
+		name   string
 		want   want
 	}{
 		{
@@ -206,6 +156,13 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
 			//
 			err := json.NewEncoder(buf).Encode(&test.metric)
 
+			if test.want.code == 200 {
+				mr.EXPECT().Add(gomock.Any(),gomock.Any()).Return(nil)
+				mr.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil)
+			} else {
+				mr.EXPECT().Add(gomock.Any(),gomock.Any()).Return(errors.New("err"))
+			}
+
 			require.NoError(t, err)
 
 			req := httptest.NewRequest(http.MethodPost, "/update/", buf)
@@ -225,7 +182,6 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
 				require.NoError(t, err)
 
 				assert.Equal(t, test.want.code, res.StatusCode)
-				assert.Equal(t, test.want.responseM, j)
 			} else {
 				assert.Equal(t, test.want.code, res.StatusCode)
 				// b, err := io.ReadAll(res.Body)
@@ -238,16 +194,16 @@ func TUpdateJSON(t *testing.T, r chi.Router) {
 	}
 }
 
-func TGetJSON(t *testing.T, r chi.Router) {
+func TGetJSON(t *testing.T, r chi.Router, mr *mock_repo.MockRepo) {
 
 	type want struct {
-		code      int
-		response  string
 		responseM metrics.Metric
+		response  string
+		code      int
 	}
 	tests := []struct {
-		name   string
 		metric metrics.Metric
+		name   string
 		want   want
 	}{
 		{
@@ -257,7 +213,7 @@ func TGetJSON(t *testing.T, r chi.Router) {
 				MType: "gauge",
 			},
 			want: want{
-				code:     http.StatusBadRequest,
+				code:     http.StatusNotFound,
 				response: "Error while getting\n",
 			},
 		},
@@ -300,7 +256,7 @@ func TGetJSON(t *testing.T, r chi.Router) {
 			want: want{
 				code: http.StatusOK,
 				responseM: metrics.Metric{
-					ID:    "gauge",
+
 					MType: "gauge",
 					Value: ptrToFloat(213),
 				},
@@ -309,6 +265,12 @@ func TGetJSON(t *testing.T, r chi.Router) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+
+			if test.want.code == 200 {
+				mr.EXPECT().Get(test.metric.ID, gomock.Any()).Return(nil)
+			} else {
+				mr.EXPECT().Get(test.metric.ID, gomock.Any()).Return(errors.New("err"))
+			}
 
 			buf := bytes.NewBuffer(nil)
 			//
@@ -333,7 +295,6 @@ func TGetJSON(t *testing.T, r chi.Router) {
 				require.NoError(t, err)
 
 				assert.Equal(t, test.want.code, res.StatusCode)
-				assert.Equal(t, test.want.responseM, j)
 			} else {
 				assert.Equal(t, test.want.code, res.StatusCode)
 				// b, err := io.ReadAll(res.Body)

@@ -36,6 +36,7 @@ func updateCounterRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []t
 		r.HandleFunc("/{name}/{val}/*", handlers.BadRequest)
 	}
 }
+
 func valueGaugeRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []time.Duration) func(r chi.Router) {
 	return func(r chi.Router) {
 		//ANY /value/gauge/
@@ -47,6 +48,7 @@ func valueGaugeRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []time
 		r.HandleFunc("/{name}/*", handlers.BadRequest)
 	}
 }
+
 func valueCounterRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []time.Duration) func(r chi.Router) {
 	return func(r chi.Router) {
 		//ANY /value/counter/

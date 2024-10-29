@@ -1,3 +1,5 @@
+//Package agent contains class Agent that collect
+//metrics and send them to server.
 package agent
 
 import (
@@ -8,10 +10,10 @@ import (
 )
 
 type Agent struct {
-	Repo   *storage.MemStorage
 	Logger logger.Logger
-	Config Config
+	Repo   *storage.MemStorage
 	Client *resty.Client
+	Config Config
 }
 
 func New() (*Agent, error) {
@@ -22,17 +24,17 @@ func New() (*Agent, error) {
 	}
 
 	log.Infoln("Logger inited successfuly")
-	Agent := Agent{
+	agent := Agent{
 		Logger: log,
 		Repo:   storage.NewMemStorage(),
 	}
 
-	Agent.GetConf()
-	Agent.Client = resty.New().SetBaseURL("http://" + Agent.Config.Address)
+	agent.GetConf()
+	agent.Client = resty.New().SetBaseURL("http://" + agent.Config.Address)
 
 	log.Infoln("Agent inited successfuly")
 
-	return &Agent, nil
+	return &agent, nil
 }
 
 func (a *Agent) Run() chan struct{} {

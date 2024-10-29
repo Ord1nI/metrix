@@ -1,3 +1,5 @@
+//Package database contains class database to collect
+//metrics in postgresql database.
 package database
 
 import (
@@ -36,7 +38,7 @@ func (db *Database) Ping() error {
 	return db.DB.PingContext(childCtx)
 }
 
-//NewDb constructor for Database.
+//NewDB constructor for Database.
 func NewDB(dsn string, waitTime time.Duration) (*Database, error) {
 	db, err := sql.Open("pgx", dsn)
 	return &Database{db, waitTime}, err

@@ -33,8 +33,8 @@ func TestMain(t *testing.T) {
 func tCounter(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, client *http.Client) {
 
 	type want struct {
-		code int
 		res  string
+		code int
 		val  metrics.Counter
 	}
 
@@ -129,8 +129,8 @@ func tCounter(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, cli
 func tGauge(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, client *http.Client) {
 
 	type want struct {
-		code int
 		res  string
+		code int
 		val  metrics.Gauge
 	}
 
@@ -214,8 +214,8 @@ func tGauge(t *testing.T, stor *storage.MemStorage, serv *httptest.Server, clien
 func tCounterGet(t *testing.T, serv *httptest.Server, client *http.Client) {
 
 	type want struct {
-		code int
 		res  string
+		code int
 	}
 
 	tests := []struct {
@@ -285,8 +285,8 @@ func tCounterGet(t *testing.T, serv *httptest.Server, client *http.Client) {
 }
 func tGaugeGet(t *testing.T, serv *httptest.Server, client *http.Client) {
 	type want struct {
-		code int
 		res  string
+		code int
 	}
 
 	tests := []struct {

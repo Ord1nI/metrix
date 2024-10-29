@@ -8,13 +8,13 @@ import (
 )
 
 type Config struct {
-	Address         string `env:"ADDRESS" envDefault:"localhost:8080"` //envvar $ADDRESS or envDefault
-	PollInterval    int64  `env:"POLL_INTERVAL" envDefault:"2"`        //envvar $POOLINTERVAL or envDefault
-	ReportInterval  int64  `env:"REPORT_INTERVAL" envDefault:"10"`     //envvar $REPORTINTERVAL or envDefault
-	BackoffSchedule []time.Duration
+	Address         string `env:"ADDRESS" envDefault:"localhost:8080"`
 	Key             string `env:"KEY" envDefault:""`
 	PublicKeyFile   string `env:"CRYPTO_KEY" envDefault:""`
-	RateLimit       int    `env:"RATE_LIMIT" envDefault:"1"`
+	BackoffSchedule []time.Duration
+	PollInterval    int64 `env:"POLL_INTERVAL" envDefault:"2"`
+	ReportInterval  int64 `env:"REPORT_INTERVAL" envDefault:"10"`
+	RateLimit       int   `env:"RATE_LIMIT" envDefault:"1"`
 }
 
 func (a *Agent) GetConf() {

@@ -8,15 +8,14 @@ import (
 )
 
 type Config struct {
-	Address         string `env:"ADDRESS" envDefault:"localhost:8080"` //envvar $ADDRESS or envDefault
-	StoreInterval   int    `env:"STORE_INTERVAL" envDefault:"300"`     //envvar $STORE_INTERVAL or envDefault
-	FileStoragePath string `env:"FILE_STORAGE_PATH"`                   //envvar $FILE_STORAGE or envDefault
-	Restore         bool   `env:"RESTORE" envDefault:"true"`           //envvar $RESTORE or envDefault
+	Address         string `env:"ADDRESS" envDefault:"localhost:8080"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	DBdsn           string `env:"DATABASE_DSN"`
-	BackoffSchedule []time.Duration
 	Key             string `env:"KEY" envDefault:""`
 	PrivateKeyFile   string `env:"CRYPTO_KEY" envDefault:""`
-
+	BackoffSchedule []time.Duration
+	StoreInterval   int  `env:"STORE_INTERVAL" envDefault:"300"`
+	Restore         bool `env:"RESTORE" envDefault:"true"`
 }
 
 func (s *Server) GetConf() error {
