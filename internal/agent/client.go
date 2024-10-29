@@ -2,12 +2,14 @@ package agent
 
 import (
 	"crypto/hmac"
+	crand "crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand/v2"
+	mrand "math/rand/v2"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -22,6 +24,7 @@ import (
 	"github.com/Ord1nI/metrix/internal/compressor"
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
+	"github.com/Ord1nI/metrix/internal/utils"
 )
 
 func backOff(r *resty.Request, URI string, BackoffSchedule []time.Duration) (res *resty.Response, err error) {
@@ -69,7 +72,7 @@ func (a *Agent) CollectMetrics() {
 		"StackSys":      metrics.Gauge(mS.StackSys),
 		"Sys":           metrics.Gauge(mS.Sys),
 		"TotalAlloc":    metrics.Gauge(mS.TotalAlloc),
-		"RandomValue":   metrics.Gauge(rand.Float64()),
+		"RandomValue":   metrics.Gauge(mrand.Float64()),
 
 		"TotalMemory": metrics.Gauge(memory.Total),
 		"FreeMemory":  metrics.Gauge(memory.Free),
@@ -107,6 +110,7 @@ func (a *Agent) SendGaugeMetrics() error {
 	}
 	return nil
 }
+
 func (a *Agent) SendMetricJSON(data metrics.Metric) error {
 	Mdata, err := json.Marshal(data)
 	if err != nil {
@@ -134,6 +138,45 @@ func (a *Agent) SendMetricJSON(data metrics.Metric) error {
 	}
 
 	return nil
+}
+func (a *Agent) SendMetricJSONwithEncryption(keyPath string) func(data metrics.Metric) error {
+	key, err := utils.ReadPublicPEM(keyPath)
+	if err != nil {
+		a.Logger.Fatal("Error reading public key",err)
+	}
+	return func(data metrics.Metric) error {
+		Mdata, err := json.Marshal(data)
+		if err != nil {
+			return err
+		}
+		Mdata, err = compressor.ToGzip(Mdata)
+
+		if err != nil {
+			return err
+		}
+
+		MdataEncrypted, err := rsa.EncryptPKCS1v15(crand.Reader,key,Mdata)
+		if err != nil {
+			a.Logger.Error("Error while encrypting")
+		}
+
+		req := a.Client.R().SetHeader("Content-Type", "application/json").
+			SetHeader("Content-Encoding", "gzip").
+			SetHeader("Accept-Encoding", "gzip").
+			SetBody(MdataEncrypted)
+
+		res, err := backOff(req, "/update/", a.Config.BackoffSchedule)
+
+		if err != nil {
+			return err
+		}
+
+		if res.StatusCode() != http.StatusOK {
+			return errors.New("doesnt sent")
+		}
+
+		return nil
+	}
 }
 
 func (a *Agent) SendMetricsJSON() error {
@@ -222,4 +265,41 @@ func (a *Agent) SendMetricsArrJSONwithSign() error {
 	}
 	return nil
 
+}
+
+func (a *Agent)SendMetricsArrJSONwithEncryption(key *rsa.PublicKey) error{
+	metricsJSON, err := a.Repo.MarshalJSON()
+	if err != nil {
+		a.Logger.Error("Error while marshaling")
+		return err
+	}
+
+	metricsJSON, err = compressor.ToGzip(metricsJSON)
+	if err != nil {
+		a.Logger.Error("Error while compressing")
+		return err
+	}
+
+	encryptedMetricsJSON, err := rsa.EncryptPKCS1v15(crand.Reader,key,metricsJSON)
+	if err != nil {
+		a.Logger.Error("Error while encrypting")
+		return err
+	}
+
+	req := a.Client.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetBody(encryptedMetricsJSON)
+
+	res, err := backOff(req, "/updates/", a.Config.BackoffSchedule)
+	if err != nil {
+		a.Logger.Error("Error while sending request")
+		return err
+	}
+	if res.StatusCode() != http.StatusOK {
+		a.Logger.Infoln("get status code", res.StatusCode())
+		return errors.New("StatusCode != OK")
+	}
+	return nil
 }

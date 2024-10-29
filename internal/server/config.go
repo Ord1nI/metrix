@@ -12,6 +12,7 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	DBdsn           string `env:"DATABASE_DSN"`
 	Key             string `env:"KEY" envDefault:""`
+	PrivateKeyFile   string `env:"CRYPTO_KEY" envDefault:""`
 	BackoffSchedule []time.Duration
 	StoreInterval   int  `env:"STORE_INTERVAL" envDefault:"300"`
 	Restore         bool `env:"RESTORE" envDefault:"true"`
@@ -35,6 +36,8 @@ func (s *Server) GetConf() error {
 		fDatabase = flag.String("d", s.Config.DBdsn,
 			"e.g.host=hostname user=username password=pssword dbname=dbname")
 		fKey = flag.String("k", s.Config.Key, "enter Signatur key")
+
+		fPrivateKeyFile = flag.String("crypto-key", s.Config.PrivateKeyFile, "enter location of file with private key")
 	)
 
 	flag.Parse()
@@ -56,6 +59,10 @@ func (s *Server) GetConf() error {
 	}
 	if s.Config.Key == "" {
 		s.Config.Key = *fKey
+	}
+
+	if s.Config.PrivateKeyFile == "" {
+		s.Config.PrivateKeyFile = *fPrivateKeyFile
 	}
 
 	s.Config.BackoffSchedule = []time.Duration{
