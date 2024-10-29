@@ -20,9 +20,9 @@ import (
 )
 
 type storageMock struct {
-	val   float64
 	name  string
 	mtype string
+	val   float64
 }
 
 func (s *storageMock) Add(name string, val interface{}) error {
@@ -60,8 +60,8 @@ func (s *storageMock) Get(name string, val interface{}) error {
 
 func TestUpdateGauge(t *testing.T) {
 	type want struct {
-		code     int
 		response string
+		code     int
 	}
 	tests := []struct {
 		name   string
@@ -112,9 +112,9 @@ func TestUpdateGauge(t *testing.T) {
 }
 func TestUpdateCounter(t *testing.T) {
 	type want struct {
+		response string
 		code     int
 		val      int64
-		response string
 	}
 	tests := []struct {
 		name   string
@@ -174,14 +174,14 @@ func TestUpdateCounter(t *testing.T) {
 }
 func TestGetGauge(t *testing.T) {
 	type want struct {
-		code     int
 		response string
+		code     int
 	}
 	tests := []struct {
 		reqURL string
 		name   string
-		val    float64
 		want   want
+		val    float64
 	}{
 		{
 			reqURL: "http://fuckintsite.com/value/gauge/name",
@@ -233,15 +233,15 @@ func TestGetGauge(t *testing.T) {
 
 func TestGetCounter(t *testing.T) {
 	type want struct {
-		code     int
 		response string
+		code     int
 	}
 
 	tests := []struct {
 		reqURL string
 		name   string
-		val    float64
 		want   want
+		val    float64
 	}{
 		{
 			reqURL: "http://fuckintsite.com/value/counter/name",

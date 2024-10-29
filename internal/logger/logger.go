@@ -1,3 +1,4 @@
+//Package logger contains simle logger interface
 package logger
 
 import (

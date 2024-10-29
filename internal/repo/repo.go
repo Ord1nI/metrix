@@ -1,3 +1,4 @@
+//Package repo contains interface to collect metrics.
 package repo
 
 import (
