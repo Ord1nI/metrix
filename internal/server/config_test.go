@@ -17,7 +17,7 @@ func TestConfig(t *testing.T) {
 
 	serv, _ := New()
 	assert.Equal(t, "10.5.12.1", serv.Config.Address)
-	assert.Equal(t, 5, serv.Config.StoreInterval)
+	assert.Equal(t, int64(5), serv.Config.StoreInterval)
 	assert.Equal(t, "5", serv.Config.FileStoragePath)
 	assert.Equal(t, true, serv.Config.Restore)
 	assert.Equal(t, "5", serv.Config.DBdsn)

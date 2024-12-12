@@ -39,6 +39,11 @@ func New() (*Agent, error) {
 
 func (a *Agent) Run() chan struct{} {
 	end := make(chan struct{})
-	a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)))
+	if (a.Config.PublicKeyFile != "") {
+		a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)), a.SendMetricJSONwithEncryption(a.Config.PublicKeyFile))
+	} else {
+		a.StartWorkers(a.TaskPoll(end, a.StartMetricCollector(end)), a.SendMetricJSON)
+	}
+
 	return end
 }

@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/hmac"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -17,6 +19,7 @@ import (
 	"time"
 
 	"github.com/Ord1nI/metrix/internal/handlers"
+	"github.com/Ord1nI/metrix/internal/utils"
 )
 
 type fileWriter interface {
@@ -25,6 +28,7 @@ type fileWriter interface {
 
 type logger interface {
 	Errorln(args ...interface{})
+	Fatal(args ...interface{})
 	Infoln(args ...interface{})
 }
 
@@ -262,6 +266,33 @@ func SignMW(l logger, key []byte) func(http.Handler) http.Handler {
 			} else {
 				handler.ServeHTTP(w, r)
 			}
+		}
+		return http.HandlerFunc(f)
+	}
+}
+
+func Decrypt(l logger, privateKeyPath string) func(http.Handler) http.Handler {
+	privateKey, err := utils.ReadPrivatePEM(privateKeyPath)
+	if err != nil {
+		l.Fatal("error while reading private key")
+	}
+	return func(http.Handler) http.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				l.Infoln("Error while reading body")
+				handlers.SendInternalError(w)
+			}
+
+			decryptedBody, err := rsa.DecryptPKCS1v15(rand.Reader,privateKey,body)
+			if err != nil {
+				l.Infoln("Error while Decryption with private key")
+				http.Error(w, "Bad request", http.StatusBadRequest)
+			}
+
+			r.Body = &reqBody{bytes.NewBuffer(decryptedBody)}
+
+			privateKey.Validate()
 		}
 		return http.HandlerFunc(f)
 	}

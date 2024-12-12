@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/Ord1nI/metrix/internal/agent"
 
 	"fmt"
@@ -22,8 +26,12 @@ func main() {
 	}
 
 	stop := agent.Run()
-	if stop != nil {
-		defer close(stop)
-	}
-	<-stop
+
+	sigs := make(chan os.Signal, 1)
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	<-sigs
+	fmt.Println("End program")
+	close(stop);
+
 }

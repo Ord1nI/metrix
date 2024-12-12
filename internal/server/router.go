@@ -62,7 +62,7 @@ func valueCounterRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []ti
 }
 
 func (s *Server) InitRouter(middlewares ...func(http.Handler) http.Handler) {
-	s.Router = CreateRouter(s.Logger, s.Repo, s.Config.BackoffSchedule, middlewares...)
+	s.Serv.Handler = CreateRouter(s.Logger, s.Repo, s.Config.BackoffSchedule, middlewares...)
 }
 
 func CreateRouter(log logger.Logger, re repo.Repo, BackoffSchedule []time.Duration, middlewares ...func(http.Handler) http.Handler) chi.Router {

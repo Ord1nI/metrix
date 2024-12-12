@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/Ord1nI/metrix/internal/middlewares"
 	"github.com/Ord1nI/metrix/internal/server"
 
@@ -22,15 +26,34 @@ func main() {
 		panic(err)
 	}
 
-	if serv.Config.Key != "" {
-		serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.SignMW(serv.Logger, []byte(serv.Config.Key)), middlewares.CompressorMW(serv.Logger))
-	} else {
-		serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
+	serv.Add(middlewares.LoggerMW(serv.Logger))
+
+	if serv.Config.PrivateKeyFile != "" {
+		serv.Add(middlewares.Decrypt(serv.Logger,serv.Config.PrivateKeyFile))
 	}
 
-	err = serv.Run()
+	if serv.Config.Key != "" {
+		serv.Add(middlewares.SignMW(serv.Logger, []byte(serv.Config.Key)))
+	}
+
+	serv.Add(middlewares.CompressorMW(serv.Logger))
+
+
+	end := make(chan struct{})
+
+	err = serv.Run(end)
 
 	if err != nil {
 		panic(err)
 	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	<-sigs
+
+	fmt.Println("End program")
+
+	close(end)
+
 }
