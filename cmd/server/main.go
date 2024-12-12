@@ -27,8 +27,9 @@ func main() {
 	if serv.Config.PrivateKeyFile != "" {
 		serv.Add(middlewares.Decrypt(serv.Logger,serv.Config.PrivateKeyFile))
 	}
+
 	if serv.Config.Key != "" {
-		serv.Add(middlewares.SingMW(serv.Logger, []byte(serv.Config.Key)))
+		serv.Add(middlewares.SignMW(serv.Logger, []byte(serv.Config.Key)))
 	}
 
 	serv.Add(middlewares.CompressorMW(serv.Logger))
