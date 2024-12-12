@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Address         string `env:"ADDRESS" envDefault:"localhost:8080"`
 	Key             string `env:"KEY" envDefault:""`
+	PublicKeyFile   string `env:"CRYPTO_KEY" envDefault:""`
 	BackoffSchedule []time.Duration
 	PollInterval    int64 `env:"POLL_INTERVAL" envDefault:"2"`
 	ReportInterval  int64 `env:"REPORT_INTERVAL" envDefault:"10"`
@@ -36,6 +37,8 @@ func (a *Agent) GetConf() {
 
 		fKey = flag.String("k", a.Config.Key, "enter Signatur key")
 
+		fPublicKeyFile = flag.String("crypto-key", a.Config.PublicKeyFile, "enter location of file with public key")
+
 		fRateLimit = flag.Int("l", a.Config.RateLimit, "enter Rate limit")
 	)
 
@@ -52,8 +55,13 @@ func (a *Agent) GetConf() {
 	if a.Config.ReportInterval == 10 {
 		a.Config.ReportInterval = *fReportInterval
 	}
+
 	if a.Config.Key == "" {
 		a.Config.Key = *fKey
+	}
+
+	if a.Config.PublicKeyFile == "" {
+		a.Config.PublicKeyFile = *fPublicKeyFile
 	}
 
 	if a.Config.Address == "localhost:8080" {

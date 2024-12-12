@@ -55,12 +55,12 @@ func (a *Agent) TaskPoll(stop <-chan struct{}, ok chan struct{}) chan metrics.Me
 	return taskPoll
 }
 
-func (a *Agent) StartWorkers(jobs <-chan metrics.Metric) {
+func (a *Agent) StartWorkers(jobs <-chan metrics.Metric, sendFunc func(metrics.Metric)error) {
 	for i := range a.Config.RateLimit {
 		a.Logger.Infoln("start", i, "worker")
 		go func() {
 			for j := range jobs {
-				err := a.SendMetricJSON(j)
+				err := sendFunc(j)
 				if err != nil {
 					a.Logger.Infoln(err)
 				}
