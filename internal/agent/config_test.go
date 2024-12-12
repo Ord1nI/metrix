@@ -14,7 +14,7 @@ func TestConfig(t *testing.T) {
 		Key            string
 		PollInterval   int64
 		ReportInterval int64
-		RateLimit      int
+		RateLimit      int64
 	}
 	tests := []struct {
 		Address        string

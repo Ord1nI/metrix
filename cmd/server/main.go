@@ -22,11 +22,18 @@ func main() {
 		panic(err)
 	}
 
-	if serv.Config.Key != "" {
-		serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.SignMW(serv.Logger, []byte(serv.Config.Key)), middlewares.CompressorMW(serv.Logger))
-	} else {
-		serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
+	serv.Add(middlewares.LoggerMW(serv.Logger))
+
+	if serv.Config.PrivateKeyFile != "" {
+		serv.Add(middlewares.Decrypt(serv.Logger,serv.Config.PrivateKeyFile))
 	}
+
+	if serv.Config.Key != "" {
+		serv.Add(middlewares.SignMW(serv.Logger, []byte(serv.Config.Key)))
+	}
+
+	serv.Add(middlewares.CompressorMW(serv.Logger))
+
 
 	err = serv.Run()
 
