@@ -16,6 +16,7 @@ type Config struct {
 	Key             string `json:"key" env:"KEY" envDefault:""`
 	PublicKeyFile   string `json:"crypto_key" env:"CRYPTO_KEY" envDefault:""`
 	FileCfg         string `env:"AGENT_CONFIG" envDefault:""`
+	IP              string `json:"IP" env:"IP" envDefault:""`
 	BackoffSchedule []time.Duration
 	PollInterval    int64 `json:"poll_interval" env:"POLL_INTERVAL" envDefault:"2"`
 	ReportInterval  int64 `json:"report_interval" env:"REPORT_INTERVAL" envDefault:"10"`
@@ -80,6 +81,8 @@ func (a *Agent) GetConf() {
 		fPublicKeyFile = flag.String("crypto-key", a.Config.PublicKeyFile, "enter location of file with public key")
 
 		fRateLimit = flag.Int64("l", a.Config.RateLimit, "enter Rate limit")
+
+		fIP = flag.String("ip", a.Config.IP, "enter IP")
 	)
 
 	flag.Parse()
@@ -101,6 +104,7 @@ func (a *Agent) GetConf() {
 	setValue (&a.Config.Key, &cfgFromFile.Key, fKey, "")
 	setValue (&a.Config.PublicKeyFile, &cfgFromFile.PublicKeyFile, fPublicKeyFile, "")
 	setValue (&a.Config.RateLimit, &cfgFromFile.RateLimit, fRateLimit, 1)
+	setValue (&a.Config.IP, &cfgFromFile.IP, fIP, "")
 
 	a.Config.BackoffSchedule = []time.Duration{
 		100 * time.Millisecond,

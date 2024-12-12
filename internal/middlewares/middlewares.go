@@ -1,5 +1,4 @@
-
-//Package middlewares collection of different middlewares.
+// Package middlewares collection of different middlewares.
 package middlewares
 
 import (
@@ -14,6 +13,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -327,6 +327,23 @@ func HeadMW(l logger) func(http.Handler) http.Handler {
 
 			handler.ServeHTTP(w, r)
 		}
+		return http.HandlerFunc(f)
+	}
+}
+
+
+func CheckSubnet(l logger, ip net.IP) func(http.Handler) http.Handler {
+	return func(handler http.Handler) http.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) {
+			if getIP := r.Header.Get("X-Real-IP"); getIP != "" {
+				if net.ParseIP(getIP).Equal(ip) {
+					handler.ServeHTTP(w, r)
+					return
+				}
+			}
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+
 		return http.HandlerFunc(f)
 	}
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/Ord1nI/metrix/internal/compressor"
+
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
 	"github.com/Ord1nI/metrix/internal/utils"
@@ -38,6 +39,10 @@ func backOff(r *resty.Request, URI string, BackoffSchedule []time.Duration) (res
 		time.Sleep(backoff)
 	}
 	return res, err
+}
+
+func (a *Agent) getSubnetIP() {
+
 }
 
 func (a *Agent) CollectMetrics() {
@@ -125,6 +130,7 @@ func (a *Agent) SendMetricJSON(data metrics.Metric) error {
 	req := a.Client.R().SetHeader("Content-Type", "application/json").
 		SetHeader("Content-Encoding", "gzip").
 		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("X-Real-IP", a.Config.IP).
 		SetBody(Mdata)
 
 	res, err := backOff(req, "/update/", a.Config.BackoffSchedule)
@@ -163,6 +169,7 @@ func (a *Agent) SendMetricJSONwithEncryption(keyPath string) func(data metrics.M
 		req := a.Client.R().SetHeader("Content-Type", "application/json").
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader("Accept-Encoding", "gzip").
+			SetHeader("X-Real-IP", a.Config.IP).
 			SetBody(MdataEncrypted)
 
 		res, err := backOff(req, "/update/", a.Config.BackoffSchedule)

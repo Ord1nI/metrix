@@ -17,7 +17,8 @@ type Config struct {
 	DBdsn           string `json:"database_dsn" env:"DATABASE_DSN"`
 	Key             string `json:"key" env:"KEY" envDefault:""`
 	FileCfg         string `env:"SERVER_CONFIG" envDefault:""`
-	PrivateKeyFile   string `json:"crypto_key" env:"CRYPTO_KEY" envDefault:""`
+	PrivateKeyFile  string `json:"crypto_key" env:"CRYPTO_KEY" envDefault:""`
+	TrustedSubnet   string `json:"trusted_subnet" env:"TRUSTED_SUBNET" envDefault:""`
 	BackoffSchedule []time.Duration
 	StoreInterval   int64  `json:"store_interval" env:"STORE_INTERVAL" envDefault:"300"`
 	Restore         bool `json:"restore" env:"RESTORE" envDefault:"true"`
@@ -81,6 +82,8 @@ func (s *Server) GetConf() error {
 		fKey = flag.String("k", s.Config.Key, "enter Signatur key")
 
 		fPrivateKeyFile = flag.String("crypto-key", s.Config.PrivateKeyFile, "enter location of file with private key")
+
+		fTrustedSubnet = flag.String("t", s.Config.TrustedSubnet, "enter from what subnet you want to recieve requests")
 	)
 
 	flag.Parse()
@@ -102,6 +105,7 @@ func (s *Server) GetConf() error {
 	setValue(&s.Config.DBdsn, &cfgFromFile.DBdsn, fDatabase, "")
 	setValue(&s.Config.Key, &cfgFromFile.Key, fKey, "")
 	setValue(&s.Config.PrivateKeyFile, &cfgFromFile.PrivateKeyFile, fPrivateKeyFile, "")
+	setValue(&s.Config.TrustedSubnet, &cfgFromFile.TrustedSubnet, fTrustedSubnet, "")
 
 	s.Config.BackoffSchedule = []time.Duration{
 		1 * time.Second,

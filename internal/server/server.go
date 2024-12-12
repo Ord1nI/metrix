@@ -1,8 +1,9 @@
-//Package server contains class server to recieve meetrics from agent.
+// Package server contains class server to recieve meetrics from agent.
 package server
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -23,6 +24,30 @@ type Server struct {
 	Logger      logger.Logger
 	Middlewares chi.Middlewares
 	Config      Config
+}
+
+func Default() (*Server, error) {
+	serv, err := New()
+	if err != nil {
+		return nil, err;
+	}
+	serv.Add(middlewares.LoggerMW(serv.Logger))
+
+	if serv.Config.PrivateKeyFile != "" {
+		serv.Add(middlewares.Decrypt(serv.Logger,serv.Config.PrivateKeyFile))
+	}
+
+	if serv.Config.Key != "" {
+		serv.Add(middlewares.SignMW(serv.Logger, []byte(serv.Config.Key)))
+	}
+
+	if serv.Config.TrustedSubnet != "" {
+		serv.Add(middlewares.CheckSubnet(serv.Logger, net.ParseIP(serv.Config.TrustedSubnet)))
+	}
+
+	serv.Add(middlewares.CompressorMW(serv.Logger))
+
+	return serv, nil
 }
 
 // New constructor for Server
