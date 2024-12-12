@@ -1,7 +1,10 @@
 package main
 
 import (
-	"github.com/Ord1nI/metrix/internal/middlewares"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/Ord1nI/metrix/internal/server"
 
 	"fmt"
@@ -17,20 +20,26 @@ func main() {
 
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
 
-	serv, err := server.New()
+	serv, err := server.Default()
 	if err != nil {
 		panic(err)
 	}
 
-	if serv.Config.Key != "" {
-		serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.SignMW(serv.Logger, []byte(serv.Config.Key)), middlewares.CompressorMW(serv.Logger))
-	} else {
-		serv.Add(middlewares.LoggerMW(serv.Logger), middlewares.CompressorMW(serv.Logger))
-	}
+	end := make(chan struct{})
 
-	err = serv.Run()
+	err = serv.Run(end)
 
 	if err != nil {
 		panic(err)
 	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	<-sigs
+
+	fmt.Println("End program")
+
+	close(end)
+
 }

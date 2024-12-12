@@ -230,7 +230,7 @@ func (m *MemStorage) Close() error {
 }
 
 //StartDataSaver method to sava metrics to file every StorageInerval must be run in gorutine.
-func (m *MemStorage) StartDataSaver(StoreInterval int, FileStoragePath string) error {
+func (m *MemStorage) StartDataSaver(StoreInterval int64, FileStoragePath string) error {
 	for {
 		time.Sleep(time.Duration(StoreInterval) * time.Second)
 		err := m.WriteToFile(FileStoragePath)

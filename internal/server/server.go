@@ -1,8 +1,9 @@
-//Package server contains class server to recieve meetrics from agent.
+// Package server contains class server to recieve meetrics from agent.
 package server
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -18,11 +19,35 @@ import (
 )
 
 type Server struct {
-	Router      chi.Router
+	Serv        http.Server
 	Repo        repo.Repo
 	Logger      logger.Logger
 	Middlewares chi.Middlewares
 	Config      Config
+}
+
+func Default() (*Server, error) {
+	serv, err := New()
+	if err != nil {
+		return nil, err;
+	}
+	serv.Add(middlewares.LoggerMW(serv.Logger))
+
+	if serv.Config.PrivateKeyFile != "" {
+		serv.Add(middlewares.Decrypt(serv.Logger,serv.Config.PrivateKeyFile))
+	}
+
+	if serv.Config.Key != "" {
+		serv.Add(middlewares.SignMW(serv.Logger, []byte(serv.Config.Key)))
+	}
+
+	if serv.Config.TrustedSubnet != "" {
+		serv.Add(middlewares.CheckSubnet(serv.Logger, net.ParseIP(serv.Config.TrustedSubnet)))
+	}
+
+	serv.Add(middlewares.CompressorMW(serv.Logger))
+
+	return serv, nil
 }
 
 // New constructor for Server
@@ -59,6 +84,7 @@ func (s *Server) Init() error {
 	}
 	s.Logger.Infoln("Repo inited successfuly")
 
+	s.Serv.Addr = s.Config.Address
 	s.InitRouter(s.Middlewares...)
 	return nil
 }
@@ -74,17 +100,31 @@ func (s *Server) RunProff(addres string) {
 	go http.ListenAndServe(addres, nil)
 }
 
-// Run Metho to start server
-func (s *Server) Run() error {
+func (s *Server) startServ(stop <-chan struct{}) {
+	go s.Serv.ListenAndServe();
+
+	<-stop
+	s.Serv.Close()
+	if err := s.Repo.Close(); err != nil {
+		s.Logger.Error(err)
+	}
+}
+
+// Run Method to start server
+func (s *Server) Run(stop <-chan struct{}) error {
 	err := s.Init()
 	if err != nil {
 		s.Logger.Errorln("Fail while starting server")
 		return err
 	}
-	defer s.Repo.Close()
-	if s.Router != nil {
-		http.ListenAndServe(s.Config.Address, s.Router)
+
+	if s.Serv.Handler != nil {
+		go s.startServ(stop)
+		return nil;
 	}
+
+	s.Repo.Close()
+
 	return errors.New("router not initialized")
 }
 
