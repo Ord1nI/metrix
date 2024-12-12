@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/Ord1nI/metrix/internal/middlewares"
 	"github.com/Ord1nI/metrix/internal/server"
 
@@ -39,5 +43,13 @@ func main() {
 
 	if err != nil {
 		panic(err)
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	select {
+	case <-sigs:
+		fmt.Println("End program")
 	}
 }

@@ -81,10 +81,15 @@ func (s *Server) Run() error {
 		s.Logger.Errorln("Fail while starting server")
 		return err
 	}
+
 	defer s.Repo.Close()
 	if s.Router != nil {
-		http.ListenAndServe(s.Config.Address, s.Router)
+
+		go http.ListenAndServe(s.Config.Address, s.Router)
+
+		return nil;
 	}
+
 	return errors.New("router not initialized")
 }
 
