@@ -1,31 +1,69 @@
+
 package agent
 
 import (
+	"encoding/json"
 	"flag"
+	"io"
+	"os"
 	"time"
 
 	"github.com/caarlos0/env/v11"
 )
 
 type Config struct {
-	Address         string `env:"ADDRESS" envDefault:"localhost:8080"`
-	Key             string `env:"KEY" envDefault:""`
-	PublicKeyFile   string `env:"CRYPTO_KEY" envDefault:""`
+	Address         string `json:"address" env:"ADDRESS" envDefault:"localhost:8080"`
+	Key             string `json:"key" env:"KEY" envDefault:""`
+	PublicKeyFile   string `json:"crypto_key" env:"CRYPTO_KEY" envDefault:""`
+	FileCfg         string `env:"AGENT_CONFIG" envDefault:""`
 	BackoffSchedule []time.Duration
-	PollInterval    int64 `env:"POLL_INTERVAL" envDefault:"2"`
-	ReportInterval  int64 `env:"REPORT_INTERVAL" envDefault:"10"`
-	RateLimit       int   `env:"RATE_LIMIT" envDefault:"1"`
+	PollInterval    int64 `json:"poll_interval" env:"POLL_INTERVAL" envDefault:"2"`
+	ReportInterval  int64 `json:"report_interval" env:"REPORT_INTERVAL" envDefault:"10"`
+	RateLimit       int64   `json:"rate_limit" env:"RATE_LIMIT" envDefault:"1"`
+}
+
+func setValue[i int64 | string] (mainCfg *i, fileCfg *i, flag *i, defaultValue i) {
+	if *mainCfg == defaultValue {
+		*mainCfg = *flag;
+	}
+
+	var sValue i;
+
+	if *mainCfg == defaultValue && *fileCfg != sValue{
+		*mainCfg = *fileCfg
+	}
+}
+
+func (a *Agent) getConfFromFile(fileName string) Config {
+
+	file, err := os.OpenFile(fileName, os.O_RDONLY, 0644);
+
+	if err != nil {
+		a.Logger.Fatalln(err);
+	}
+
+	var cfg = Config{}
+
+	bFile, err := io.ReadAll(file)
+
+	if err != nil {
+		a.Logger.Fatalln(err)
+	}
+
+	err = json.Unmarshal(bFile, &cfg)
+
+	if err != nil {
+		a.Logger.Fatalln(err)
+	}
+
+	return cfg
 }
 
 func (a *Agent) GetConf() {
 	err := env.Parse(&a.Config)
 
 	if err != nil {
-		a.Logger.Errorln(err)
-
-		a.Config.Address = "localhost:8080"
-		a.Config.PollInterval = 2
-		a.Config.ReportInterval = 10
+		a.Logger.Fatalln(err)
 	}
 
 	var (
@@ -37,44 +75,32 @@ func (a *Agent) GetConf() {
 
 		fKey = flag.String("k", a.Config.Key, "enter Signatur key")
 
+		fFileCfg = flag.String("config", a.Config.FileCfg, "enter config file location")
+
 		fPublicKeyFile = flag.String("crypto-key", a.Config.PublicKeyFile, "enter location of file with public key")
 
-		fRateLimit = flag.Int("l", a.Config.RateLimit, "enter Rate limit")
+		fRateLimit = flag.Int64("l", a.Config.RateLimit, "enter Rate limit")
 	)
 
 	flag.Parse()
 
-	if a.Config.Address == "localhost:8080" {
-		a.Config.Address = *fAddress
+	if a.Config.FileCfg == "" {
+		a.Config.FileCfg = *fFileCfg
 	}
 
-	if a.Config.PollInterval == 2 {
-		a.Config.PollInterval = *fPoolInterval
+	var cfgFromFile Config
+
+	if a.Config.FileCfg != ""  {
+		cfgFromFile = a.getConfFromFile(a.Config.FileCfg)
 	}
 
-	if a.Config.ReportInterval == 10 {
-		a.Config.ReportInterval = *fReportInterval
-	}
 
-	if a.Config.Key == "" {
-		a.Config.Key = *fKey
-	}
-
-	if a.Config.PublicKeyFile == "" {
-		a.Config.PublicKeyFile = *fPublicKeyFile
-	}
-
-	if a.Config.Address == "localhost:8080" {
-		a.Config.Address = *fAddress
-	}
-
-	if a.Config.PollInterval == 2 {
-		a.Config.PollInterval = *fPoolInterval
-	}
-
-	if a.Config.ReportInterval == 10 {
-		a.Config.ReportInterval = *fReportInterval
-	}
+	setValue (&a.Config.Address, &cfgFromFile.Address, fAddress, "localhost:8080")
+	setValue (&a.Config.PollInterval, &cfgFromFile.PollInterval, fPoolInterval, 2)
+	setValue (&a.Config.ReportInterval, &cfgFromFile.ReportInterval, fReportInterval, 10)
+	setValue (&a.Config.Key, &cfgFromFile.Key, fKey, "")
+	setValue (&a.Config.PublicKeyFile, &cfgFromFile.PublicKeyFile, fPublicKeyFile, "")
+	setValue (&a.Config.RateLimit, &cfgFromFile.RateLimit, fRateLimit, 1)
 
 	a.Config.BackoffSchedule = []time.Duration{
 		100 * time.Millisecond,
@@ -84,9 +110,5 @@ func (a *Agent) GetConf() {
 
 	if a.Config.PollInterval > a.Config.ReportInterval {
 		a.Logger.Infoln("PollInterval > ReportInterval")
-	}
-
-	if a.Config.RateLimit == 1 {
-		a.Config.RateLimit = *fRateLimit
 	}
 }
