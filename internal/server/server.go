@@ -85,7 +85,7 @@ func (s *Server) Run() error {
 	defer s.Repo.Close()
 	if s.Router != nil {
 
-		http.ListenAndServe(s.Config.Address, s.Router)
+		go http.ListenAndServe(s.Config.Address, s.Router)
 
 		return nil;
 	}
