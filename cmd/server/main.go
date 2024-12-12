@@ -39,7 +39,9 @@ func main() {
 	serv.Add(middlewares.CompressorMW(serv.Logger))
 
 
-	err = serv.Run()
+	var end chan struct{}
+
+	err = serv.Run(end)
 
 	if err != nil {
 		panic(err)
@@ -49,5 +51,8 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	<-sigs
+
 	fmt.Println("End program")
+	close(end)
+
 }
