@@ -77,6 +77,7 @@ func (s *Server) RunProff(addres string) {
 
 func (s *Server) startServ(stop <-chan struct{}) {
 	go s.Serv.ListenAndServe();
+
 	<-stop
 	s.Serv.Close()
 	if err := s.Repo.Close(); err != nil {
@@ -93,7 +94,7 @@ func (s *Server) Run(stop <-chan struct{}) error {
 	}
 
 	if s.Serv.Handler != nil {
-		s.startServ(stop)
+		go s.startServ(stop)
 		return nil;
 	}
 

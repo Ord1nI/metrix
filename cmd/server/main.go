@@ -39,7 +39,7 @@ func main() {
 	serv.Add(middlewares.CompressorMW(serv.Logger))
 
 
-	var end chan struct{}
+	end := make(chan struct{})
 
 	err = serv.Run(end)
 
@@ -53,6 +53,7 @@ func main() {
 	<-sigs
 
 	fmt.Println("End program")
+
 	close(end)
 
 }
