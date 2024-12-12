@@ -30,10 +30,8 @@ func main() {
 	sigs := make(chan os.Signal, 1)
     signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	select {
-	case <-sigs:
-		fmt.Println("End program")
-		close(stop);
-	}
+	<-sigs
+	fmt.Println("End program")
+	close(stop);
 
 }
