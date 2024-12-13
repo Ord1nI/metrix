@@ -4,8 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/Ord1nI/metrix/internal/agent"
+	"github.com/Ord1nI/metrix/internal/agent/grpcagent"
 
 	"fmt"
 )
@@ -20,7 +19,7 @@ func main() {
 
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
 
-	agent, err := agent.New()
+	agent, err := grpcagent.New()
 	if err != nil {
 		panic(err)
 	}

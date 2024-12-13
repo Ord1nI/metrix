@@ -62,7 +62,7 @@ func (s *Server) getConfFromFile(fileName string) Config {
 }
 
 func (s *Server) GetConf() error {
-	err := env.Parse(&s.Config)
+	err := env.Parse(s.Config)
 
 	if err != nil {
 		return err

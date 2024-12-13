@@ -61,7 +61,7 @@ func (a *Agent) getConfFromFile(fileName string) Config {
 }
 
 func (a *Agent) GetConf() {
-	err := env.Parse(&a.Config)
+	err := env.Parse(a.Config)
 
 	if err != nil {
 		a.Logger.Fatalln(err)

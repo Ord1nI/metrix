@@ -16,7 +16,7 @@ import (
 
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
-	"github.com/Ord1nI/metrix/internal/server"
+	"github.com/Ord1nI/metrix/internal/server/httpserv"
 )
 
 func Test(t *testing.T) {
@@ -24,7 +24,7 @@ func Test(t *testing.T) {
 	stor := storage.NewMemStorage()
 
 	bs := []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second}
-	r := server.CreateRouter(zap.NewNop().Sugar(), stor, bs)
+	r := httpserv.CreateRouter(zap.NewNop().Sugar(), stor, bs)
 
 	serv := httptest.NewServer(r)
 	client := serv.Client()

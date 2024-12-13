@@ -5,9 +5,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Ord1nI/metrix/internal/server"
-
 	"fmt"
+
+	"github.com/Ord1nI/metrix/internal/server/grpcserv"
 )
 
 var (
@@ -20,9 +20,10 @@ func main() {
 
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
 
-	serv, err := server.Default()
+	serv, err := grpcserv.Default()
 	if err != nil {
 		panic(err)
+
 	}
 
 	end := make(chan struct{})

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package sproto;
+
+option go_package = "proto/sproto";
+
+
+message Metric {
+        int64 Delta = 1;
+        double Value = 2;
+        string ID = 3;
+        string MType = 4;
+
+}
+
+message Metrics {
+        repeated Metric  Metrics = 1;
+}
+
+message MetricName {
+        string ID = 1;
+}
+
+message Error {
+        string err = 1;
+}
+
+service metrixServer {
+        rpc SendMetric(Metric) returns (Error);
+        rpc GetMetric(MetricName) returns (Metric);
+        rpc SendMetrics(Metrics) returns (Error);
+}
