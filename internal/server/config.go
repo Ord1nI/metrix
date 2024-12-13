@@ -38,6 +38,8 @@ func setValue[i int64 | string | bool] (mainCfg *i, fileCfg *i, flag *i, default
 
 func (s *Server) getConfFromFile(fileName string) Config {
 
+
+
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0644);
 
 	if err != nil {

@@ -4,14 +4,17 @@ import (
 	"context"
 
 	"github.com/Ord1nI/metrix/internal/agent"
+	"github.com/Ord1nI/metrix/internal/agent/grpcagent/interceptors"
 	pb "github.com/Ord1nI/metrix/internal/proto"
 	"github.com/Ord1nI/metrix/internal/repo/metrics"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 type GrpcAgent struct {
 	*agent.Agent
+	Interceptors []grpc.UnaryClientInterceptor
 	Client pb.MetrixServerClient
 }
 
@@ -26,7 +29,14 @@ func New() (*GrpcAgent, error) {
 		Agent: mAgent,
 	}
 
-	conn, err := grpc.Dial(agent.Config.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if agent.Config.Key != "" {
+		agent.Add(interceptors.SignInterceptor(agent.Logger, []byte(agent.Config.Key)))
+	}
+	if agent.Config.IP != "" {
+		agent.Add(interceptors.AddIPInterceptro(agent.Logger, agent.Config.IP))
+	}
+
+	conn, err := grpc.Dial(agent.Config.Address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithChainUnaryInterceptor(agent.Interceptors...))
 
 	if err != nil {
 		return nil, err
@@ -37,6 +47,10 @@ func New() (*GrpcAgent, error) {
 	agent.Logger.Infoln("Agent inited successfuly")
 
 	return &agent, nil
+}
+
+func (g *GrpcAgent) Add(i ...grpc.UnaryClientInterceptor) {
+	g.Interceptors = append(g.Interceptors, i...)
 }
 
 func (g *GrpcAgent) SendMetric(m metrics.Metric) error{
@@ -56,7 +70,8 @@ func (g *GrpcAgent) SendMetric(m metrics.Metric) error{
 		}
 	}
 
-	res, err := g.Client.SendMetric(context.Background(), gMetric)
+	ctx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{}))
+	res, err := g.Client.SendMetric(ctx, gMetric)
 	g.Logger.Infoln(res.GetErr)
 
 	return err
@@ -65,11 +80,6 @@ func (g *GrpcAgent) SendMetric(m metrics.Metric) error{
 
 func (g *GrpcAgent) Run() chan struct{} {
 	end := make(chan struct{})
-	// if (g.Config.PublicKeyFile != "") {
-	// 	g.StartWorkers(g.TaskPoll(end, g.StartMetricCollector(end)), g.SendMetricJSONwithEncryption(g.Config.PublicKeyFile))
-	// } else {
-	// 	a.StartWorkers(g.TaskPoll(end, g.StartMetricCollector(end)), g.SendMetricJSON)
-	// }
 	g.StartWorkers(g.TaskPoll(end, g.StartMetricCollector(end)), g.SendMetric)
 
 	return end

@@ -31,6 +31,10 @@ func Default() (*GrpcServer, error) {
 		serv.Add(interceptors.SignInterceptor(serv.Logger, []byte(serv.Config.Key)))
 	}
 
+	if serv.Config.TrustedSubnet != "" {
+		serv.Add(interceptors.CheckSubnetInterceptor(serv.Logger, net.ParseIP(serv.Config.TrustedSubnet)))
+	}
+
 	serv.GServer = grpc.NewServer(grpc.ChainUnaryInterceptor(serv.Interceptors...))
 
 	return serv, nil
@@ -58,7 +62,7 @@ func (g *GrpcServer) Add(i ...grpc.UnaryServerInterceptor) {
 }
 
 func (g *GrpcServer) Run(<-chan struct{}) error {
-	listen, err := net.Listen("", g.Config.Address)
+	listen, err := net.Listen("tcp", g.Config.Address)
 	if err != nil {
         g.Logger.Fatal(err)
     }

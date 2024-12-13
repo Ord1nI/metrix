@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"net"
 
 	"github.com/Ord1nI/metrix/internal/logger"
 	pb "github.com/Ord1nI/metrix/internal/proto"
@@ -60,7 +61,15 @@ func SignInterceptor(l logger.Logger, key []byte) grpc.UnaryServerInterceptor {
 			return nil, errors.New("Cant get metadata")
 		}
 
-		stringHash := md["HashSHA256"][0]
+		var stringHash string
+
+		v := md.Get("HashSHA256")
+
+		if len(v) == 1 {
+			stringHash = v[0]
+		} else {
+			stringHash = ""
+		}
 
 		if stringHash != "" {
 			if len(stringHash) < 64 {
@@ -99,5 +108,29 @@ func SignInterceptor(l logger.Logger, key []byte) grpc.UnaryServerInterceptor {
 		} else {
 			return handler(ctx, req)
 		}
+	})
+}
+
+func CheckSubnetInterceptor(l logger.Logger, ip net.IP) grpc.UnaryServerInterceptor {
+	return grpc.UnaryServerInterceptor(func (ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any,error) {
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return nil, errors.New("Cant get metadata")
+		}
+
+		var getIP string
+
+		v := md.Get("X-Real-IP")
+		if len(v) == 1 {
+			getIP = v[0]
+		} else {
+			getIP = ""
+		}
+
+		if net.ParseIP(getIP).Equal(ip) {
+			return handler(ctx, req)
+		}
+
+		return nil, errors.New("Forbidden")
 	})
 }

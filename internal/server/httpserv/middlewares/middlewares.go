@@ -314,7 +314,7 @@ func HeadMW(l logger) func(http.Handler) http.Handler {
 }
 
 
-func CheckSubnet(l logger, ip net.IP) func(http.Handler) http.Handler {
+func CheckSubnetMW(l logger, ip net.IP) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		f := func(w http.ResponseWriter, r *http.Request) {
 			if getIP := r.Header.Get("X-Real-IP"); getIP != "" {
