@@ -1,4 +1,4 @@
-package server
+package httpserv
 
 import (
 	"github.com/go-chi/chi/v5"
@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Ord1nI/metrix/internal/handlers"
+	"github.com/Ord1nI/metrix/internal/server/httpserv/handlers"
 	"github.com/Ord1nI/metrix/internal/logger"
 	"github.com/Ord1nI/metrix/internal/repo"
 )
@@ -61,8 +61,8 @@ func valueCounterRoute(sugar logger.Logger, stor repo.Repo, BackoffSchedule []ti
 	}
 }
 
-func (s *Server) InitRouter(middlewares ...func(http.Handler) http.Handler) {
-	s.Router = CreateRouter(s.Logger, s.Repo, s.Config.BackoffSchedule, middlewares...)
+func (s *HttpServer) InitRouter(middlewares ...func(http.Handler) http.Handler) {
+	s.Serv.Handler = CreateRouter(s.Logger, s.Repo, s.Config.BackoffSchedule, middlewares...)
 }
 
 func CreateRouter(log logger.Logger, re repo.Repo, BackoffSchedule []time.Duration, middlewares ...func(http.Handler) http.Handler) chi.Router {

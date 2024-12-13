@@ -1,22 +1,25 @@
-
-//Package middlewares collection of different middlewares.
+// Package middlewares collection of different middlewares.
 package middlewares
 
 import (
 	"bytes"
 	"compress/gzip"
 	"crypto/hmac"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/Ord1nI/metrix/internal/handlers"
+	"github.com/Ord1nI/metrix/internal/server/httpserv/handlers"
+	"github.com/Ord1nI/metrix/internal/utils"
 )
 
 type fileWriter interface {
@@ -25,25 +28,8 @@ type fileWriter interface {
 
 type logger interface {
 	Errorln(args ...interface{})
+	Fatal(args ...interface{})
 	Infoln(args ...interface{})
-}
-
-// FileWriterWM middleware that dump MemStorage to file within specified interval of time.
-func FileWriterWM(logger logger, stor fileWriter, path string) func(http.Handler) http.Handler {
-	return func(h http.Handler) http.Handler {
-		f := func(w http.ResponseWriter, r *http.Request) {
-			h.ServeHTTP(w, r)
-			if strings.Contains(r.URL.String(), "update") {
-				err := stor.WriteToFile(path) // add logger in future
-				if err != nil {
-					logger.Errorln("Error while wiring to file:", path)
-				} else {
-					logger.Infoln("all data Successfuly loaded to file")
-				}
-			}
-		}
-		return http.HandlerFunc(f)
-	}
 }
 
 type gzipWriter struct {
@@ -267,6 +253,33 @@ func SignMW(l logger, key []byte) func(http.Handler) http.Handler {
 	}
 }
 
+func Decrypt(l logger, privateKeyPath string) func(http.Handler) http.Handler {
+	privateKey, err := utils.ReadPrivatePEM(privateKeyPath)
+	if err != nil {
+		l.Fatal("error while reading private key")
+	}
+	return func(http.Handler) http.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				l.Infoln("Error while reading body")
+				handlers.SendInternalError(w)
+			}
+
+			decryptedBody, err := rsa.DecryptPKCS1v15(rand.Reader,privateKey,body)
+			if err != nil {
+				l.Infoln("Error while Decryption with private key")
+				http.Error(w, "Bad request", http.StatusBadRequest)
+			}
+
+			r.Body = &reqBody{bytes.NewBuffer(decryptedBody)}
+
+			privateKey.Validate()
+		}
+		return http.HandlerFunc(f)
+	}
+}
+
 type reqBody struct {
 	*bytes.Buffer
 }
@@ -296,6 +309,23 @@ func HeadMW(l logger) func(http.Handler) http.Handler {
 
 			handler.ServeHTTP(w, r)
 		}
+		return http.HandlerFunc(f)
+	}
+}
+
+
+func CheckSubnetMW(l logger, ip net.IP) func(http.Handler) http.Handler {
+	return func(handler http.Handler) http.Handler {
+		f := func(w http.ResponseWriter, r *http.Request) {
+			if getIP := r.Header.Get("X-Real-IP"); getIP != "" {
+				if net.ParseIP(getIP).Equal(ip) {
+					handler.ServeHTTP(w, r)
+					return
+				}
+			}
+			http.Error(w, "Forbidden", http.StatusForbidden)
+		}
+
 		return http.HandlerFunc(f)
 	}
 }

@@ -1,4 +1,4 @@
-//Package server contains class server to recieve meetrics from agent.
+// Package server contains class server to recieve meetrics from agent.
 package server
 
 import (
@@ -6,23 +6,18 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-
 	_ "net/http/pprof"
 
 	"github.com/Ord1nI/metrix/internal/logger"
-	"github.com/Ord1nI/metrix/internal/middlewares"
 	"github.com/Ord1nI/metrix/internal/repo"
 	"github.com/Ord1nI/metrix/internal/repo/database"
 	"github.com/Ord1nI/metrix/internal/repo/storage"
 )
 
 type Server struct {
-	Router      chi.Router
 	Repo        repo.Repo
 	Logger      logger.Logger
-	Middlewares chi.Middlewares
-	Config      Config
+	Config      *Config
 }
 
 // New constructor for Server
@@ -35,6 +30,7 @@ func New() (*Server, error) {
 	}
 	s := Server{
 		Logger: Logger,
+		Config: &Config{},
 	}
 	s.Logger.Infoln("Logger inited successfuly")
 
@@ -46,12 +42,12 @@ func New() (*Server, error) {
 	}
 	s.Logger.Infoln("succesfuly getting conf", s.Config)
 
-	s.Add(middlewares.HeadMW(s.Logger))
+	s.Init()
 
 	return &s, nil
 }
 
-// Init method that calls initRepo and initRouter.
+// Init method that calls initRepo.
 func (s *Server) Init() error {
 	err := s.InitRepo()
 	if err != nil {
@@ -59,13 +55,6 @@ func (s *Server) Init() error {
 	}
 	s.Logger.Infoln("Repo inited successfuly")
 
-	s.InitRouter(s.Middlewares...)
-	return nil
-}
-
-// Add method to add middlewares in server list must be call before Init.
-func (s *Server) Add(mw ...func(http.Handler) http.Handler) error {
-	s.Middlewares = append(s.Middlewares, mw...)
 	return nil
 }
 
@@ -74,19 +63,6 @@ func (s *Server) RunProff(addres string) {
 	go http.ListenAndServe(addres, nil)
 }
 
-// Run Metho to start server
-func (s *Server) Run() error {
-	err := s.Init()
-	if err != nil {
-		s.Logger.Errorln("Fail while starting server")
-		return err
-	}
-	defer s.Repo.Close()
-	if s.Router != nil {
-		http.ListenAndServe(s.Config.Address, s.Router)
-	}
-	return errors.New("router not initialized")
-}
 
 // InitRepo metho to Init Repo base of config and given flags between db and map.
 func (s *Server) InitRepo() error {
@@ -158,7 +134,7 @@ func (s *Server) initStor() error {
 			s.Logger.Infoln("Data saver started successfuly")
 		} else {
 			s.Logger.Infoln("Starting immediate Data saver")
-			s.Add(middlewares.FileWriterWM(s.Logger, stor, s.Config.FileStoragePath))
+			// s.Add(middlewares.FileWriterWM(s.Logger, stor, s.Config.FileStoragePath))
 		}
 		return nil
 	}
